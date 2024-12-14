@@ -90,11 +90,11 @@ void loop() {
   M5.Lcd.drawString("Max AD Value: " + String(maxMicValue), 160, 10, GFXFF);
 
   // ノイズ検出時の表示
-  if (micValue > NOISE_CONSTANT_VALUE) {
-    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-    M5.Lcd.setTextSize(4);
-    M5.Lcd.drawString("NOISE", 160, 40, GFXFF);
-    M5.Lcd.setTextSize(2); // NOISE表示後に文字サイズを元に戻す
+  if (maxMicValue > NOISE_CONSTANT_VALUE) {
+      M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+
+      M5.Lcd.drawString("NOISE", 160, 360, GFXFF);
+
   }
 
   draw_waveform();              // 描画処理
