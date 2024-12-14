@@ -11,10 +11,17 @@ volatile int16_t val_buf[MAX_LEN] = {0}; // 描画用バッファ
 volatile int16_t write_index = 0;       // 書き込みインデックス
 volatile int16_t data_count = 0;        // 有効データの個数
 volatile int micValue = 0;              // 最新のAD値
+volatile int maxMicValue = 0;           // 1秒間の最大AD値
+volatile unsigned long lastUpdateTime = 0;
 
 // タイマー割り込みで呼び出される関数
 void IRAM_ATTR onTimer() {
   micValue = analogRead(MIC_Unit);
+
+  // 最大値を更新
+  if (micValue > maxMicValue) {
+    maxMicValue = micValue;
+  }
 
   // データをバッファに書き込み
   val_buf[write_index] = map((int16_t)(micValue * X_SCALE), 1800, 4095, 0, 100);
@@ -25,6 +32,13 @@ void IRAM_ATTR onTimer() {
   // データ数を更新（MAX_LENを超えないように）
   if (data_count < MAX_LEN) {
     data_count++;
+  }
+
+  // 1秒ごとに最大値をリセット
+  unsigned long currentTime = millis();
+  if (currentTime - lastUpdateTime >= 1000) {
+    lastUpdateTime = currentTime;
+    maxMicValue = 0;
   }
 }
 
@@ -64,10 +78,10 @@ void setup() {
 void loop() {
   M5.Lcd.fillScreen(TFT_BLACK); // 描画領域をクリア
   
-  // AD値を描画
+  // 最大AD値を描画
   M5.Lcd.setTextDatum(TC_DATUM);
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
-  M5.Lcd.drawString("AD Value: " + String(micValue), 160, 10, GFXFF);
+  M5.Lcd.drawString("Max AD Value: " + String(maxMicValue), 160, 10, GFXFF);
 
   draw_waveform();              // 描画処理
   delay(20);                    // 少し遅延を入れる（スムーズな描画のため）
