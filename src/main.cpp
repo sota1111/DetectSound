@@ -6,6 +6,7 @@
 #define X_OFFSET 0
 #define Y_OFFSET 100
 #define X_SCALE 1
+#define CONSTANT_VALUE 2500 // グラフに赤線で表示する定数値
 
 volatile int16_t val_buf[MAX_LEN] = {0}; // 描画用バッファ
 volatile int16_t write_index = 0;       // 書き込みインデックス
@@ -56,6 +57,10 @@ static void draw_waveform() {
 
     read_index = next_index; // 次のデータへ
   }
+
+  // 定数値を赤線で描画
+  int constantY = map(CONSTANT_VALUE, 1800, 4095, 0, 100) + Y_OFFSET;
+  M5.Lcd.drawLine(X_OFFSET, constantY, X_OFFSET + MAX_LEN, constantY, TFT_RED);
 }
 
 hw_timer_t *timer = NULL;
