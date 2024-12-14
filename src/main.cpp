@@ -1,44 +1,42 @@
 #include <M5Stack.h>
+#include "Free_Fonts.h" 
+#define MIC_Unit 36
+#define MAX_LEN 320
+#define X_OFFSET 0
+#define Y_OFFSET 100
+#define X_SCALE 1
 
-#define THRESHOLD 2200
+static void draw_waveform() {
+
+  static int16_t val_buf[MAX_LEN] = {0};
+  static int16_t pt = MAX_LEN - 1;
+  int micValue = analogRead(MIC_Unit);
+  val_buf[pt] = map((int16_t)(micValue * X_SCALE), 1800, 4095,  0, 100);
+
+
+  if (--pt < 0) {
+    pt = MAX_LEN - 1;
+  }
+
+  for (int i = 1; i < (MAX_LEN); i++) {
+    uint16_t now_pt = (pt + i) % (MAX_LEN);
+    M5.Lcd.drawLine(i + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 2) % MAX_LEN] + Y_OFFSET, TFT_BLACK);
+    if (i < MAX_LEN - 1) {
+      M5.Lcd.drawLine(i + X_OFFSET, val_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, TFT_GREEN);
+    }
+  }
+}
 
 void setup() {
   M5.begin();
-  M5.Lcd.println("Starting ADC on PORT B");
-  M5.Lcd.fillScreen(BLACK); // Clear the screen again
-  M5.Lcd.setTextSize(3);    // Reset text size
-  M5.Lcd.setTextColor(WHITE); // Reset text color
+  M5.Lcd.setFreeFont(FSS12);
+  M5.Lcd.setTextDatum(TC_DATUM);
+  M5.Lcd.drawString("MIC Unit", 160, 0, GFXFF);
+
+  dacWrite(25, 0); 
+
 }
 
 void loop() {
-  int adcValue;
-  int countOverThreshold = 0; // Counter for values over the threshold
-
-  // Measure ADC values for 1000ms (10ms interval)
-  for (int i = 0; i < 100; i++) {
-    adcValue = analogRead(36); // GPIO36 = VP pin
-    if (adcValue > THRESHOLD) {
-      countOverThreshold++;
-    }
-    delay(10); // Wait for 10ms
-  }
-
-  // Print the count of values over the threshold on the LCD
-  M5.Lcd.setCursor(0, 20); // Move the cursor to avoid overwriting "Starting ADC"
-  M5.Lcd.fillRect(0, 20, 320, 20, BLACK); // Clear previous text
-  M5.Lcd.printf("adcValue: %d\n", adcValue);
-  M5.Lcd.printf("Count > %d: %d", THRESHOLD, countOverThreshold);
-
-  // Check if countOverThreshold exceeds 10
-  if (countOverThreshold >= 10) {
-    M5.Lcd.fillScreen(BLACK); // Clear the screen
-    M5.Lcd.setTextSize(4);    // Set large text size
-    M5.Lcd.setTextColor(RED); // Set text color to red
-    M5.Lcd.setCursor(40, 100);
-    M5.Lcd.println("Big Sound");
-    delay(1000); // Wait for 1 second before continuing
-    M5.Lcd.fillScreen(BLACK); // Clear the screen again
-    M5.Lcd.setTextSize(3);    // Reset text size
-    M5.Lcd.setTextColor(WHITE); // Reset text color
-  }
+  draw_waveform();
 }
