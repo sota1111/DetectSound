@@ -6,13 +6,19 @@ void setup() {
 }
 
 void loop() {
-  // Read ADC value from PORT B (pin G36)
-  int adcValue = analogRead(36); // GPIO36 = VP pin
+  int maxAdcValue = 0; // Variable to store the maximum ADC value
 
-  // Print ADC value on the LCD
+  // Measure ADC values for 500ms (10ms interval)
+  for (int i = 0; i < 50; i++) {
+    int adcValue = analogRead(36); // GPIO36 = VP pin
+    if (adcValue > maxAdcValue) {
+      maxAdcValue = adcValue;
+    }
+    delay(10); // Wait for 10ms
+  }
+
+  // Print the maximum ADC value on the LCD
   M5.Lcd.setCursor(0, 20); // Move the cursor to avoid overwriting "Starting ADC"
   M5.Lcd.fillRect(0, 20, 320, 20, BLACK); // Clear previous ADC value
-  M5.Lcd.printf("ADC Value: %d", adcValue);
-
-  delay(500); // Wait for 500ms
+  M5.Lcd.printf("Max ADC Value: %d", maxAdcValue);
 }
