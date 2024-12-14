@@ -1,31 +1,49 @@
 #include <M5Stack.h>
-#include "Free_Fonts.h" 
+#include "Free_Fonts.h"
+
 #define MIC_Unit 36
 #define MAX_LEN 320
 #define X_OFFSET 0
 #define Y_OFFSET 100
 #define X_SCALE 1
 
-static void draw_waveform() {
+volatile int16_t val_buf[MAX_LEN] = {0}; // 描画用バッファ
+volatile int16_t write_index = 0;       // 書き込みインデックス
+volatile int16_t data_count = 0;        // 有効データの個数
 
-  static int16_t val_buf[MAX_LEN] = {0};
-  static int16_t pt = MAX_LEN - 1;
+// タイマー割り込みで呼び出される関数
+void IRAM_ATTR onTimer() {
   int micValue = analogRead(MIC_Unit);
-  val_buf[pt] = map((int16_t)(micValue * X_SCALE), 1800, 4095,  0, 100);
 
+  // データをバッファに書き込み
+  val_buf[write_index] = map((int16_t)(micValue * X_SCALE), 1800, 4095, 0, 100);
 
-  if (--pt < 0) {
-    pt = MAX_LEN - 1;
-  }
+  // 次の書き込み位置を計算
+  write_index = (write_index + 1) % MAX_LEN;
 
-  for (int i = 1; i < (MAX_LEN); i++) {
-    uint16_t now_pt = (pt + i) % (MAX_LEN);
-    M5.Lcd.drawLine(i + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 2) % MAX_LEN] + Y_OFFSET, TFT_BLACK);
-    if (i < MAX_LEN - 1) {
-      M5.Lcd.drawLine(i + X_OFFSET, val_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, TFT_GREEN);
-    }
+  // データ数を更新（MAX_LENを超えないように）
+  if (data_count < MAX_LEN) {
+    data_count++;
   }
 }
+
+// 描画関数
+static void draw_waveform() {
+  if (data_count <= 1) return; // 有効なデータが不足している場合はスキップ
+
+  int read_index = write_index; // 現在の書き込み位置を起点に読み出し開始
+  for (int i = 0; i < data_count - 1; i++) {
+    int next_index = (read_index + 1) % MAX_LEN;
+
+    // データを描画
+    M5.Lcd.drawLine(i + X_OFFSET, val_buf[read_index] + Y_OFFSET, 
+                    i + 1 + X_OFFSET, val_buf[next_index] + Y_OFFSET, TFT_GREEN);
+
+    read_index = next_index; // 次のデータへ
+  }
+}
+
+hw_timer_t *timer = NULL;
 
 void setup() {
   M5.begin();
@@ -33,10 +51,17 @@ void setup() {
   M5.Lcd.setTextDatum(TC_DATUM);
   M5.Lcd.drawString("MIC Unit", 160, 0, GFXFF);
 
-  dacWrite(25, 0); 
+  dacWrite(25, 0);
 
+  // タイマーの設定
+  timer = timerBegin(0, 80, true);         // タイマー0を設定 (80分周 -> 1µs)
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 1000, true);      // 1msごとに割り込み
+  timerAlarmEnable(timer);                 // タイマーを有効化
 }
 
 void loop() {
-  draw_waveform();
+  M5.Lcd.fillScreen(TFT_BLACK); // 描画領域をクリア
+  draw_waveform();              // 描画処理
+  delay(20);                    // 少し遅延を入れる（スムーズな描画のため）
 }
