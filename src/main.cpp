@@ -6,7 +6,7 @@
 #define X_OFFSET 0
 #define Y_OFFSET 100
 #define X_SCALE 1
-#define CONSTANT_VALUE 2500 // グラフに赤線で表示する定数値
+#define NOISE_CONSTANT_VALUE 2500 // グラフに赤線で表示する定数値
 
 volatile int16_t val_buf[MAX_LEN] = {0}; // 描画用バッファ
 volatile int16_t write_index = 0;       // 書き込みインデックス
@@ -59,7 +59,7 @@ static void draw_waveform() {
   }
 
   // 定数値を赤線で描画
-  int constantY = map(CONSTANT_VALUE, 1800, 4095, 0, 100) + Y_OFFSET;
+  int constantY = map(NOISE_CONSTANT_VALUE, 1800, 4095, 0, 100) + Y_OFFSET;
   M5.Lcd.drawLine(X_OFFSET, constantY, X_OFFSET + MAX_LEN, constantY, TFT_RED);
 }
 
@@ -86,7 +86,16 @@ void loop() {
   // 最大AD値を描画
   M5.Lcd.setTextDatum(TC_DATUM);
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
+  M5.Lcd.setTextSize(2); // AD値の文字サイズを初期化
   M5.Lcd.drawString("Max AD Value: " + String(maxMicValue), 160, 10, GFXFF);
+
+  // ノイズ検出時の表示
+  if (micValue > NOISE_CONSTANT_VALUE) {
+    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+    M5.Lcd.setTextSize(4);
+    M5.Lcd.drawString("NOISE", 160, 40, GFXFF);
+    M5.Lcd.setTextSize(2); // NOISE表示後に文字サイズを元に戻す
+  }
 
   draw_waveform();              // 描画処理
   delay(20);                    // 少し遅延を入れる（スムーズな描画のため）
