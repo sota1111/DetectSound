@@ -86,15 +86,15 @@ void loop() {
   // 最大AD値を描画
   M5.Lcd.setTextDatum(TC_DATUM);
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
-  M5.Lcd.setTextSize(2); // AD値の文字サイズを初期化
+  M5.Lcd.setTextSize(1); // AD値の文字サイズを初期化
   M5.Lcd.drawString("Max AD Value: " + String(maxMicValue), 160, 10, GFXFF);
+  int max_dB = (maxMicValue-1920)*104/(4095-1920)+30;
+  M5.Lcd.drawString("dB: " + String(max_dB), 160, 30, GFXFF);
 
   // ノイズ検出時の表示
   if (maxMicValue > NOISE_CONSTANT_VALUE) {
       M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-
       M5.Lcd.drawString("NOISE", 160, 360, GFXFF);
-
   }
 
   draw_waveform();              // 描画処理
