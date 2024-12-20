@@ -7,7 +7,7 @@
 #define X_OFFSET 0
 #define Y_OFFSET 100
 #define X_SCALE 1
-#define NOISE_CONSTANT_VALUE 2500 // グラフに赤線で表示する定数値
+#define NOISE_CONSTANT_VALUE 3000 // グラフに赤線で表示する定数値
 #define JST (3600L * 9)
 
 const char* ssid = "aterm-90fa24-a";
@@ -99,13 +99,36 @@ void setup() {
   M5.Lcd.setTextDatum(TC_DATUM);
 
   // スピーカーの設定
-  M5.Speaker.setVolume(3);
+  M5.Speaker.setVolume(1);
+
+  //SDカードの設定
+  if (!SD.exists("/Data")) {
+    SD.mkdir("/Data");
+  }
 
   // タイマーの設定
   timer = timerBegin(0, 80, true);         // タイマー0を設定 (80分周 -> 1µs)
   timerAttachInterrupt(timer, &onTimer, true);
   timerAlarmWrite(timer, 1000, true);      // 1msごとに割り込み
   timerAlarmEnable(timer);                 // タイマーを有効化
+}
+
+void logNoiseTimestamp() {
+  struct tm timeInfo;
+  if (getLocalTime(&timeInfo)) {
+    char timestamp[64];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeInfo);
+
+    File file = SD.open("/Data/noise_log.txt", FILE_APPEND);
+    if (file) {
+      file.printf("NOISE detected at: %s\n", timestamp);
+      file.close();
+    } else {
+      M5.Lcd.println("Failed to open log file");
+    }
+  } else {
+    M5.Lcd.println("Failed to get time");
+  }
 }
 
 void loop() {
@@ -130,6 +153,9 @@ void loop() {
       M5.Speaker.tone(440, 100);
       delay(100);
       M5.Speaker.mute();
+
+      // ノイズ検出時刻をSDカードに記録
+      logNoiseTimestamp();
   }
 
   draw_waveform();              // 描画処理
