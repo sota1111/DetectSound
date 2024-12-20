@@ -76,7 +76,8 @@ void setup() {
   M5.begin();
   // wifi接続
   WiFi.begin(ssid, password);
-  M5.Lcd.print('wifi接続中');
+  // 接続待ち
+  M5.Lcd.printf("Connecting to %s", ssid);
   while (WiFi.status() != WL_CONNECTED){
       delay(500);
       M5.Lcd.print('.');
@@ -96,6 +97,9 @@ void setup() {
   // LCDの初期化
   M5.Lcd.setFreeFont(FSS12);
   M5.Lcd.setTextDatum(TC_DATUM);
+
+  // スピーカーの設定
+  M5.Speaker.setVolume(3);
 
   // タイマーの設定
   timer = timerBegin(0, 80, true);         // タイマー0を設定 (80分周 -> 1µs)
@@ -119,6 +123,13 @@ void loop() {
   if (maxMicValue > NOISE_CONSTANT_VALUE) {
       M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
       M5.Lcd.drawString("NOISE", 160, 360, GFXFF);
+      M5.Speaker.tone(440, 100);
+      delay(100);
+      M5.Speaker.mute();
+      delay(100);
+      M5.Speaker.tone(440, 100);
+      delay(100);
+      M5.Speaker.mute();
   }
 
   draw_waveform();              // 描画処理
