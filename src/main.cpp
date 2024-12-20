@@ -1,4 +1,5 @@
 #include <M5Stack.h>
+#include <WiFi.h>
 #include "Free_Fonts.h"
 
 #define MIC_Unit 36
@@ -7,6 +8,9 @@
 #define Y_OFFSET 100
 #define X_SCALE 1
 #define NOISE_CONSTANT_VALUE 2500 // グラフに赤線で表示する定数値
+
+const char* ssid = "aterm-90fa24-a";
+const char* password = "0fbd815a5b8b9";
 
 volatile int16_t val_buf[MAX_LEN] = {0}; // 描画用バッファ
 volatile int16_t write_index = 0;       // 書き込みインデックス
@@ -67,11 +71,13 @@ hw_timer_t *timer = NULL;
 
 void setup() {
   M5.begin();
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED){
+      delay(500);
+      M5.Lcd.print('.');
+  }
   M5.Lcd.setFreeFont(FSS12);
   M5.Lcd.setTextDatum(TC_DATUM);
-  M5.Lcd.drawString("MIC Unit", 160, 0, GFXFF);
-
-  dacWrite(25, 0);
 
   // タイマーの設定
   timer = timerBegin(0, 80, true);         // タイマー0を設定 (80分周 -> 1µs)
