@@ -8,6 +8,7 @@
 #define Y_OFFSET 100
 #define X_SCALE 1
 #define NOISE_CONSTANT_VALUE 2500 // グラフに赤線で表示する定数値
+#define JST (3600L * 9)
 
 const char* ssid = "aterm-90fa24-a";
 const char* password = "0fbd815a5b8b9";
@@ -70,12 +71,29 @@ static void draw_waveform() {
 hw_timer_t *timer = NULL;
 
 void setup() {
+  struct tm tm;
+
   M5.begin();
+  // wifi接続
   WiFi.begin(ssid, password);
+  M5.Lcd.print('wifi接続中');
   while (WiFi.status() != WL_CONNECTED){
       delay(500);
       M5.Lcd.print('.');
   }
+  configTime(JST,0,"ntp.nict.jp", "time.google.com", "ntp.jst.mfeed.ad.jp");
+
+  if(getLocalTime(&tm)){
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setCursor(60,80);
+    M5.Lcd.printf("%d/%2d/%2d",
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    M5.Lcd.setCursor(80,140);
+    M5.Lcd.printf("%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+  }
+  delay(5000);
+
+  // LCDの初期化
   M5.Lcd.setFreeFont(FSS12);
   M5.Lcd.setTextDatum(TC_DATUM);
 
