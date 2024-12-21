@@ -16,8 +16,9 @@ void NoiseDetector::logNoiseTimestamp() {
         char timestamp[64];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeInfo);
         sdcardHandler.writeSDCard("/Data/noise.txt", timestamp);
+        M5.Lcd.println("Success to write time on SD card");
     } else {
-        M5.Lcd.println("Failed to get time");
+        M5.Lcd.println("Failed to write time on SD card");
     }
 }
 

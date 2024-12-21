@@ -10,12 +10,13 @@ NoiseDetector noiseDetector;
 WaveformDrawer waveformDrawer;
 
 volatile int micValue = 0;
+volatile int maxMicValue = 0;
 hw_timer_t *timer = NULL;
 
 void IRAM_ATTR onTimer() {
     micValue = analogRead(36);
     waveformDrawer.updateBuffer(micValue);
-    noiseDetector.detectNoise(micValue);
+    maxMicValue = waveformDrawer.calcMaxADValue(micValue);
 }
 
 void setup() {
@@ -32,6 +33,7 @@ void setup() {
 void loop() {
     M5.Lcd.fillScreen(TFT_BLACK);
     waveformDrawer.drawMaxADValue(micValue);
+    noiseDetector.detectNoise(maxMicValue);
     waveformDrawer.drawWaveform();
     delay(20);
 }
