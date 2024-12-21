@@ -6,13 +6,13 @@ WaveformDrawer::WaveformDrawer() : write_index(0), data_count(0) {
 
 // AD値を表示
 void WaveformDrawer::drawMaxADValue(int micValue) {
-    int maxMicValue = 0;
-    unsigned long lastUpdateTime = 0;
-    unsigned long currentTime = millis();
+    static int maxMicValue = 0;
+    static unsigned long lastUpdateTime = 0;
 
     if (micValue > maxMicValue) {
         maxMicValue = micValue;
     }
+
     M5.Lcd.setTextDatum(TC_DATUM);
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
     M5.Lcd.setTextSize(2);
@@ -20,7 +20,8 @@ void WaveformDrawer::drawMaxADValue(int micValue) {
     int max_dB = (maxMicValue-1920)*104/(4095-1920)+30;
     M5.Lcd.drawString("dB: " + String(max_dB), 160, 30);
 
-    if (currentTime - lastUpdateTime >= 1000) {
+    unsigned long currentTime = millis();
+    if (currentTime - lastUpdateTime >= 1000) { 
         lastUpdateTime = currentTime;
         maxMicValue = 0;
     }
