@@ -21,8 +21,8 @@ void IRAM_ATTR onTimer() {
 
 void setup() {
     M5.begin();
-    //wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
-    //wifiHandler.synchronizeTime();
+    wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
+    wifiHandler.synchronizeTime();
     noiseDetector.initNoiseDetector();
     timer = timerBegin(0, 80, true);         // タイマー0を設定 (80分周 -> 1µs)
     timerAttachInterrupt(timer, &onTimer, true);
