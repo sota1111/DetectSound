@@ -17,6 +17,7 @@ private:
 
 public:
     WaveformDrawer();
+    void drawMaxADValue(int micValue);
     void updateBuffer(int micValue);
     void drawWaveform();
 };
