@@ -1,6 +1,6 @@
 #include "NoiseDetector.h"
-#include "SDCardHandler.h"
-#include "SpeakerHandler.h"
+#include "DeviceHandler/SDCardHandler.h"
+#include "DeviceHandler/SpeakerHandler.h"
 
 SDCardHandler sdcardHandler;
 SpeakerHandler speakerHandler;

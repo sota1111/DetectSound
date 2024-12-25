@@ -1,8 +1,8 @@
 // --- Main.cpp ---
 #include <M5Stack.h>
-#include "WiFiHandler.h"
 #include "NoiseDetector.h"
 #include "WaveformDrawer.h"
+#include "DeviceHandler/WiFiHandler.h"
 #include "secret.h"
 
 WiFiHandler wifiHandler;
