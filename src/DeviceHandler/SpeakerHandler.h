@@ -2,7 +2,6 @@
 #define SPEAKERHANDLER_H
 
 #include <M5Stack.h>
-#include "common.h"
 
 class SpeakerHandler {
 public:

@@ -3,9 +3,7 @@
 
 #include <WiFi.h>
 #include <M5Stack.h>
-#include "config.h"
-
-#define JST (3600L * 9)
+#include "../config/config.h"
 
 class WiFiHandler {
 public:
