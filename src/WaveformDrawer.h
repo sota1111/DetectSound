@@ -3,6 +3,7 @@
 
 #include <M5Stack.h>
 #include "common.h"
+#include "config.h"
 
 #define MAX_LEN 320
 #define X_OFFSET 0

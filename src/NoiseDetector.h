@@ -1,11 +1,10 @@
 #ifndef NOISEDETECTOR_H
 #define NOISEDETECTOR_H
 
-#define FONT_SIZE 2
-
 #include <M5Stack.h>
 #include <SD.h>
 #include <time.h>
+#include "config.h"
 #include "common.h"
 
 class NoiseDetector {

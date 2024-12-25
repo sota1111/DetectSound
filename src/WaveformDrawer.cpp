@@ -14,7 +14,7 @@ int WaveformDrawer::calcMaxADValue(int micValue) {
     }
 
     unsigned long currentTime = millis();
-    if (currentTime - lastUpdateTime >= 1000) { 
+    if (currentTime - lastUpdateTime >= TIME_UPDATE_MAX_VALUE) { 
         lastUpdateTime = currentTime;
         maxMicValue = 0;
     }
@@ -24,7 +24,7 @@ int WaveformDrawer::calcMaxADValue(int micValue) {
 void WaveformDrawer::drawMaxADValue(int maxMicValue) {
     M5.Lcd.setTextDatum(TC_DATUM);
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
-    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextSize(FONT_SIZE);
     M5.Lcd.drawString("Max AD Value: " + String(maxMicValue), 160, 10);
     int max_dB = (maxMicValue-1920)*104/(4095-1920)+30;
     M5.Lcd.drawString("dB: " + String(max_dB), 160, 30);

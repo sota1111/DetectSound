@@ -5,7 +5,7 @@ void WiFiHandler::connectWiFi(const char* ssid, const char* password) {
     WiFi.begin(ssid, password);
 
     unsigned long startAttemptTime = millis();
-    const unsigned long timeout = 30000; // 30秒タイムアウト
+    const unsigned long timeout = TIMEOUT_WIFI_CONNECT;
 
     while (WiFi.status() != WL_CONNECTED) {
         if (millis() - startAttemptTime >= timeout) {
