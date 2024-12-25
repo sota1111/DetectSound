@@ -4,7 +4,6 @@
 #include <M5Stack.h>
 #include <SD.h>
 #include <time.h>
-#include "common.h"
 
 class SDCardHandler {
 public:

@@ -2,8 +2,7 @@
 #define WAVEFORMDRAWER_H
 
 #include <M5Stack.h>
-#include "common.h"
-#include "config.h"
+#include "../config/config.h"
 
 #define MAX_LEN 320
 #define X_OFFSET 0

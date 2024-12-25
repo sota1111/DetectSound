@@ -4,8 +4,7 @@
 #include <M5Stack.h>
 #include <SD.h>
 #include <time.h>
-#include "config.h"
-#include "common.h"
+#include "../config/config.h"
 
 class NoiseDetector {
 private:
