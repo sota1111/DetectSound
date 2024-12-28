@@ -14,13 +14,14 @@ void SDCardHandler::initSDCard(const char* dirname) {
 }
 
 // SDカード書き込み
-void SDCardHandler::writeSDCard(const char* filename, const char* data) {
+bool SDCardHandler::writeSDCard(const char* filename, const char* data) {
     File file = SD.open(filename, FILE_APPEND);
     if (!file) {
         M5.Lcd.println("Failed to open file for writing");
         delay(1000);
-        return;
+        return false;  // 書き込み失敗
     }
     file.println(data);
     file.close();
+    return true;  // 書き込み成功
 }

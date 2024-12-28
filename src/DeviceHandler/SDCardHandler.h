@@ -8,7 +8,7 @@
 class SDCardHandler {
 public:
     void initSDCard(const char* dirname);
-    void writeSDCard(const char* filename, const char* data);
+    bool writeSDCard(const char* filename, const char* data);
 };
 
 #endif
