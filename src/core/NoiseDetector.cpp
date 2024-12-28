@@ -6,8 +6,17 @@ SDCardHandler sdcardHandler;
 SpeakerHandler speakerHandler;
 
 // 初期化
+NoiseDetector::NoiseDetector() : write_index(0){
+    memset(val_buf, 0, sizeof(val_buf));
+}
+
 void NoiseDetector::initNoiseDetector() {
     sdcardHandler.initSDCard("/Data");
+}
+
+void NoiseDetector::updateBuffer(int micValue) {
+    val_buf[write_index] = micValue;
+    write_index = (write_index + 1) % RECORD_MAX_LEN;
 }
 
 void NoiseDetector::logNoiseTimestamp() {
@@ -34,7 +43,6 @@ void NoiseDetector::logNoiseTimestamp() {
         delay(1000);
     }
 }
-
 
 void NoiseDetector::detectNoise(int micValue) {
     maxMicValue = micValue;
