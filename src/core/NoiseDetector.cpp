@@ -25,24 +25,42 @@ void NoiseDetector::logNoiseTimestamp() {
         char timestamp[64];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", &timeInfo);
 
-        // Generate file name based on the current timestamp
+        // CSVファイル名を生成
         char fileName[128];
-        snprintf(fileName, sizeof(fileName), "/Data/noise_%s.txt", timestamp);
+        snprintf(fileName, sizeof(fileName), "/Data/noise_%s.csv", timestamp);
 
-        // Write the timestamp into the newly created file
-        sdcardHandler.writeSDCard(fileName, timestamp);
-        M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
-        M5.Lcd.setCursor(0,80);
-        M5.Lcd.println("Success to write time on SD card");
+        // CSV形式で val_buf のデータを文字列に変換
+        String csvData = "";
+        for (int i = 0; i < RECORD_MAX_LEN; i++) {
+            csvData += String(val_buf[i]);
+            if (i < RECORD_MAX_LEN - 1) {
+                csvData += ",";
+            }
+        }
+
+        // SDカードにCSV形式でデータを書き込み
+        if (sdcardHandler.writeSDCard(fileName, csvData.c_str())) {
+            // 書き込み成功メッセージ
+            M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
+            M5.Lcd.setCursor(0, 80);
+            M5.Lcd.println("Success to write data on SD card");
+        } else {
+            // 書き込み失敗メッセージ
+            M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+            M5.Lcd.setCursor(0, 80);
+            M5.Lcd.println("Failed to write data to SD card");
+        }
+
         delay(1000);
     } else {
-        // Display error message if the current time cannot be obtained
+        // 現在時刻が取得できなかった場合のエラーメッセージ
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
         M5.Lcd.setCursor(0, 80);
         M5.Lcd.println("Current time has not been obtained.");
         delay(1000);
     }
 }
+
 
 void NoiseDetector::detectNoise(int micValue) {
     maxMicValue = micValue;
