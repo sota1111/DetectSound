@@ -90,14 +90,6 @@ void NoiseDetector::logNoiseTimestamp() {
 
 }
 
-bool NoiseDetector::judgeRestartTimer() {
-    if (isTimerStopped) {
-        isTimerStopped = false;
-        return true;
-    }
-    return false;
-}
-
 void NoiseDetector::storeNoise() {
     if (isRequestSpeaker) {
         speakerHandler.playTone(440, 100);
@@ -105,14 +97,11 @@ void NoiseDetector::storeNoise() {
     }
 
     if (isDataStored) {
-        //timerStop(timer);
         logNoiseTimestamp();
         isDataStored = false;
         M5.Lcd.setCursor(0, 120);
         M5.Lcd.println("NOISE STORED");
-        delay(3000);
-        M5.Lcd.fillScreen(TFT_BLACK);
-        isTimerStopped = true;
+        restartTimer();
     }
 }
 
@@ -133,8 +122,9 @@ void NoiseDetector::restartTimer() {
     M5.Lcd.println("Restart Timer");
     delay(1000);
     M5.Lcd.fillScreen(TFT_BLACK);
-    delay(10);
+    delay(1000);
     timerRestart(timer);
     timerStart(timer);
+    delay(1000);
 }
 
