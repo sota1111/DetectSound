@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 // 騒音検出
-#define NOISE_CONSTANT_VALUE 2100
+#define NOISE_CONSTANT_VALUE 2500
 #define TIME_IRQ (100) //us
 //#define RECORD_1s_LEN 1000*1000/TIME_IRQ
 // 10000を超えるデータはDRAMが足りない。PSRAMを使う必要がある。
