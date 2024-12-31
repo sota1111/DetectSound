@@ -22,36 +22,37 @@ void NoiseDetector::initNoiseDetector() {
 void NoiseDetector::updateBuffer(int micValue) {
     static unsigned int detect_count = 0;
     static bool isNoiseDetected = false;
-
-    M5.Lcd.setCursor(0, 0);
-    M5.Lcd.printf("micValue: %d", micValue);
+    static unsigned int startTime = 0;
 
     if(!isDataStored){
         // ノイズを検出前後のデータを記録        
         write_index = (write_index + 1) % RECORD_MAX_LEN;
         val_buf[write_index] = micValue;
-        // M5.Lcd.setCursor(0, 200);
-        // M5.Lcd.printf("write_index: %d", write_index);
+        // ノイズ検出
         if((micValue > NOISE_CONSTANT_VALUE) && (isNoiseDetected == false)){
             isNoiseDetected = true;
             detect_index = write_index;
             M5.Lcd.setCursor(0, 20);
             M5.Lcd.printf("NOISE DETECTED");
+            startTime = millis();
         }
         if(isNoiseDetected){
             detect_count++;
         }
         // ノイズ検出後、データを貯め続ける。
         if(detect_count > RECORD_AFTER_LEN){
+            timerStop(timer);
             isDataStored = true;
             isNoiseDetected = false;
             isRequestSpeaker = true;
             detect_count = 0;
             M5.Lcd.setCursor(0, 40);
             M5.Lcd.printf("BUFFER FULL");
-            timerStop(timer);
             M5.Lcd.setCursor(0, 60);
             M5.Lcd.printf("STOP TIMER");
+            int stopTime = millis() - startTime;
+            M5.Lcd.setCursor(0, 80);
+            M5.Lcd.printf("Time: %d", stopTime);     
         }
     }
 }
@@ -78,16 +79,15 @@ void NoiseDetector::logNoiseTimestamp() {
         File csvFile = SD.open(fileName, FILE_APPEND);
         csvFile.print(csvData.c_str());
         csvFile.close();
-        M5.Lcd.setCursor(0, 80);
+        M5.Lcd.setCursor(0, 100);
         M5.Lcd.printf("STORE DATA");
     } else {
         // 現在時刻が取得できなかった場合のエラーメッセージ
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 80);
+        M5.Lcd.setCursor(0, 100);
         M5.Lcd.println("Current time has not been obtained.");
         delay(1000);
     }
-
 }
 
 void NoiseDetector::storeNoise() {
@@ -118,7 +118,7 @@ void NoiseDetector::startTimer() {
 }
 
 void NoiseDetector::restartTimer() {
-    M5.Lcd.setCursor(0, 100);
+    M5.Lcd.setCursor(0, 140);
     M5.Lcd.println("Restart Timer");
     delay(1000);
     M5.Lcd.fillScreen(TFT_BLACK);

@@ -14,7 +14,6 @@ private:
     unsigned int write_index;
     unsigned int detect_index;
     int16_t val_buf[RECORD_MAX_LEN];
-
     void logNoiseTimestamp(); // 宣言を適切な位置に配置
 
 public:
