@@ -14,14 +14,19 @@ private:
     unsigned int write_index;
     unsigned int detect_index;
     int16_t val_buf[RECORD_MAX_LEN];
-    void logNoiseTimestamp();
+
+    void logNoiseTimestamp(); // 宣言を適切な位置に配置
 
 public:
     NoiseDetector();
     void initNoiseDetector();
     void updateBuffer(int micValue);
-    void storeNoise(hw_timer_t *timer);
-    bool judgeRestartTimer(void);
+    void startTimer();
+    void restartTimer();
+    bool judgeRestartTimer();
+    void storeNoise();
 };
+
+extern NoiseDetector noiseDetector;
 
 #endif
