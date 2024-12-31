@@ -23,9 +23,6 @@ void loop() {
     //M5.Lcd.fillScreen(TFT_BLACK);
     //waveformDrawer.drawMaxADValue(maxMicValue);
     noiseDetector.storeNoise();
-    if(noiseDetector.judgeRestartTimer()){
-        noiseDetector.restartTimer();
-    }
     //waveformDrawer.drawWaveform();
     // 画面左下にIRQの時間を表示
     //M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
