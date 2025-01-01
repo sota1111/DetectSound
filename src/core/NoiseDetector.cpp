@@ -105,6 +105,9 @@ void NoiseDetector::logNoiseTimestamp() {
         csvFile.close();
         M5.Lcd.setCursor(0, 100);
         M5.Lcd.printf("STORE DATA");
+
+        // POST処理を追加
+        postCSVtoServer(fileName);
     } else {
         // 現在時刻が取得できなかった場合のエラーメッセージ
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
@@ -112,6 +115,56 @@ void NoiseDetector::logNoiseTimestamp() {
         M5.Lcd.println("Current time has not been obtained.");
         delay(1000);
     }
+}
+
+void NoiseDetector::postCSVtoServer(const char* fileName) {
+    HTTPClient http;
+    String url = "https://k4eittjcp9.execute-api.ap-northeast-1.amazonaws.com/Prod/detect-sound";
+    File csvFile = SD.open(fileName, FILE_READ);
+
+    if (!csvFile) {
+        M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.println("Failed to open CSV file.");
+        return;
+    }
+
+    size_t fileSize = csvFile.size();
+    uint8_t* buffer = (uint8_t*)malloc(fileSize);
+    if (buffer == NULL) {
+        M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.println("Failed to allocate memory.");
+        csvFile.close();
+        return;
+    }
+
+    csvFile.read(buffer, fileSize);
+    csvFile.close();
+
+    String sanitizedFileName = fileName;
+    if (sanitizedFileName.startsWith("/")) {
+        sanitizedFileName = sanitizedFileName.substring(1);
+    }
+
+    http.begin(url);
+    http.addHeader("Content-Type", "text/csv");
+    http.addHeader("X-File-Name", sanitizedFileName);
+
+    int httpResponseCode = http.POST(buffer, fileSize);
+    free(buffer);
+
+    if (httpResponseCode > 0) {
+        String response = http.getString();
+        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.println("Response: " + response);
+    } else {
+        M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.printf("POST failed, error: %d", httpResponseCode);
+    }
+
+    http.end();
 }
 
 void NoiseDetector::storeNoise() {
@@ -123,7 +176,7 @@ void NoiseDetector::storeNoise() {
     if (isDataStored) {
         logNoiseTimestamp();
         isDataStored = false;
-        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.setCursor(0, 160);
         M5.Lcd.println("NOISE STORED");
         restartTimer();
     }
@@ -144,7 +197,7 @@ void NoiseDetector::startTimer() {
 }
 
 void NoiseDetector::restartTimer() {
-    M5.Lcd.setCursor(0, 140);
+    M5.Lcd.setCursor(0, 180);
     M5.Lcd.println("Restart Timer");
     delay(1000);
     M5.Lcd.fillScreen(TFT_BLACK);
