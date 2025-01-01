@@ -5,6 +5,7 @@
 #include <SD.h>
 #include <time.h>
 #include "../config/config.h"
+#include "../config/secret.h"
 
 class NoiseDetector {
 private:
