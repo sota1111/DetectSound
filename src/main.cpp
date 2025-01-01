@@ -1,5 +1,7 @@
 // --- Main.cpp ---
 #include <M5Stack.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
 #include "core/NoiseDetector.h"
 #include "core/WaveformDrawer.h"
 #include "DeviceHandler/WiFiHandler.h"
@@ -14,11 +16,28 @@ void setup() {
     wifiHandler.synchronizeTime();
     noiseDetector.initNoiseDetector();
     M5.Lcd.fillScreen(TFT_BLACK);
-    noiseDetector.startTimer();
+    // noiseDetector.startTimer();
+    // hello worldをGet
+    // Lambdaからデータ取得
+    HTTPClient http;
+    String url = "https://k4eittjcp9.execute-api.ap-northeast-1.amazonaws.com/Prod/hello/";
+    http.begin(url);
+    int httpCode = http.GET();
+
+    if (httpCode > 0) {
+        String payload = http.getString();
+        M5.Lcd.println("Response:");
+        M5.Lcd.println(payload);
+    } else {
+        M5.Lcd.println("HTTP GET failed, error: " + String(httpCode));
+    }
+    http.end();
+
+    
 }
 
 void loop() {
-    noiseDetector.storeNoise();
+    //noiseDetector.storeNoise();
 }
 
 
