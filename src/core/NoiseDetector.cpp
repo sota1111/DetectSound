@@ -1,10 +1,14 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
 #include "NoiseDetector.h"
+#include "DeviceHandler/WiFiHandler.h"
 #include "DeviceHandler/SDCardHandler.h"
 #include "DeviceHandler/SpeakerHandler.h"
 
 SDCardHandler sdcardHandler;
 SpeakerHandler speakerHandler;
 NoiseDetector noiseDetector;
+WiFiHandler wifiHandler;
 
 volatile int micValue = 0;
 volatile unsigned long irqTime;
@@ -17,6 +21,26 @@ NoiseDetector::NoiseDetector() : isRequestSpeaker(false), isDataStored(false), i
 
 void NoiseDetector::initNoiseDetector() {
     sdcardHandler.initSDCard("/Data");
+    wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
+    wifiHandler.synchronizeTime();
+
+    // hello worldをGet
+    // Lambdaからデータ取得
+    HTTPClient http;
+    String url = "https://k4eittjcp9.execute-api.ap-northeast-1.amazonaws.com/Prod/hello/";
+    http.begin(url);
+    int httpCode = http.GET();
+
+    if (httpCode > 0) {
+        String payload = http.getString();
+        M5.Lcd.println("Response:");
+        M5.Lcd.println(payload);
+    } else {
+        M5.Lcd.println("HTTP GET failed, error: " + String(httpCode));
+    }
+    http.end();
+    delay(1000);
+    M5.Lcd.fillScreen(TFT_BLACK);
 }
 
 void NoiseDetector::updateBuffer(int micValue) {
