@@ -16,7 +16,6 @@ void setup() {
     wifiHandler.synchronizeTime();
     noiseDetector.initNoiseDetector();
     M5.Lcd.fillScreen(TFT_BLACK);
-    // noiseDetector.startTimer();
     // hello worldをGet
     // Lambdaからデータ取得
     HTTPClient http;
@@ -32,12 +31,13 @@ void setup() {
         M5.Lcd.println("HTTP GET failed, error: " + String(httpCode));
     }
     http.end();
-
-    
+    delay(1000);
+    M5.Lcd.fillScreen(TFT_BLACK);
+    noiseDetector.startTimer();
 }
 
 void loop() {
-    //noiseDetector.storeNoise();
+    noiseDetector.storeNoise();
 }
 
 
