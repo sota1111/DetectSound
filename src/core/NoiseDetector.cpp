@@ -111,6 +111,8 @@ void IRAM_ATTR onTimer() {
 }
 
 void NoiseDetector::startTimer() {
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.println("NOISE DETECTING");
     timer = timerBegin(0, 80, true);
     timerAttachInterrupt(timer, &onTimer, true);
     timerAlarmWrite(timer, TIME_IRQ, true);
@@ -123,6 +125,8 @@ void NoiseDetector::restartTimer() {
     delay(1000);
     M5.Lcd.fillScreen(TFT_BLACK);
     delay(100);
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.println("NOISE DETECTING");
     timerRestart(timer);
     timerStart(timer);
     delay(100);
