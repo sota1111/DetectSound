@@ -16,6 +16,7 @@ private:
     unsigned int detect_index;
     int16_t val_buf[RECORD_MAX_LEN];
     void logNoiseTimestamp();
+    void notificationAWS();
     void postCSVtoServer(const char* fileName);
 
 public:
