@@ -46,7 +46,6 @@ void WaveformDrawer::drawStringWithFormat(const char* label, int value, int x, i
 }
 
 void WaveformDrawer::drawWaveform() {
-    // 実行周期を計測
     static unsigned long lastTime = 0;
     unsigned long currentTime = micros();
     unsigned long elapsedTime = currentTime - lastTime;
@@ -54,17 +53,33 @@ void WaveformDrawer::drawWaveform() {
     drawStringWithFormat("Time", elapsedTime, 0, 0);
     lastTime = currentTime;
 
-    int16_t graphVal = micWave - adcAverage;
+    int16_t adcVal = micWave - adcAverage;
     drawStringWithFormat("adcAverage Value", (int)adcAverage, 0, 10);
     drawStringWithFormat("micWave Value", (int)micWave, 0, 20);
-    drawStringWithFormat("Graph Value", (int)graphVal, 0, 30);
+    drawStringWithFormat("Graph Value", (int)abs(adcVal), 0, 30);
 
-    //delay(1000);
-    //M5.Lcd.fillScreen(TFT_BLACK);
-
-    static int16_t val_buf[MAX_LEN] = {50};
+    static int16_t adc_buf[MAX_LEN] = {0};
+    static int16_t val_buf[MAX_LEN] = {0};
+    static int16_t integ_buf[MAX_LEN] = {0};
     static int16_t pt = MAX_LEN - 1;
-    val_buf[pt] = map((int16_t)(graphVal * X_SCALE), -2048, 2048,  0, 100);
+    // 移動積分を管理するための変数
+    static long integralValue = 0;       // 移動積分値(直近 N サンプルの合計)
+    static int  sampleCount   = 0;       // 何サンプル蓄積したか(立ち上がり時用)
+    adc_buf[pt] = adcVal;
+    val_buf[pt] = map((int16_t)(adcVal * X_SCALE), -2048, 2048,  0, 100);
+
+    // === 移動積分の計算ロジック ===
+    integralValue += abs(adcVal);
+
+    if (sampleCount < INTEGRAL_SAMPLES) {
+      // まだ N サンプルに達していない場合 (立ち上がり時)
+      sampleCount++;
+    } else {
+      uint16_t oldPos = (pt + INTEGRAL_SAMPLES) % MAX_LEN;
+      integralValue -= abs(adc_buf[oldPos]);
+    }
+    integ_buf[pt] = map((int16_t)(-integralValue / INTEGRAL_SAMPLES), -2048, 2048, 0, 100);
+    drawStringWithFormat("IntegralValue", (int)integralValue/INTEGRAL_SAMPLES, 0, 40);
 
     if (--pt < 0) {
         pt = MAX_LEN - 1;
@@ -75,6 +90,14 @@ void WaveformDrawer::drawWaveform() {
         M5.Lcd.drawLine(i + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 2) % MAX_LEN] + Y_OFFSET, TFT_BLACK);
         if (i < MAX_LEN - 1) {
             M5.Lcd.drawLine(i + X_OFFSET, val_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, TFT_GREEN);
+        }
+    }
+
+    for (int i = 1; i < (MAX_LEN); i++) {
+        uint16_t now_pt = (pt + i) % (MAX_LEN);
+        M5.Lcd.drawLine(i + X_OFFSET, integ_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, integ_buf[(now_pt + 2) % MAX_LEN] + Y_OFFSET, TFT_BLACK);
+        if (i < MAX_LEN - 1) {
+            M5.Lcd.drawLine(i + X_OFFSET, integ_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, integ_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, TFT_BLUE);
         }
     }
 }
