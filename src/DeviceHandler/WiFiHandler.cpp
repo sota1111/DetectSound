@@ -1,7 +1,7 @@
 #include "WiFiHandler.h"
 
 void WiFiHandler::connectWiFi(const char* ssid, const char* password) {
-    M5.Lcd.printf("Connecting to %s", ssid);
+    M5.Lcd.printf("Connecting to %s\n", ssid);
     WiFi.begin(ssid, password);
 
     unsigned long startAttemptTime = millis();
