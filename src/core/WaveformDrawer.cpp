@@ -11,37 +11,6 @@ WaveformDrawer::WaveformDrawer() : write_index(0), data_count(0) {
     memset(val_buf, 0, sizeof(val_buf));
 }
 
-// AD値を表示
-int WaveformDrawer::calcMaxADValue(int micWave) {
-    static int maxMicValue = 0;
-    static unsigned long lastUpdateTime = 0;
-
-    if (micWave > maxMicValue) {
-        maxMicValue = micWave;
-    }
-
-    unsigned long currentTime = millis();
-    if (currentTime - lastUpdateTime >= TIME_UPDATE_MAX_VALUE) { 
-        lastUpdateTime = currentTime;
-        maxMicValue = 0;
-    }
-    return maxMicValue;
-}
-
-void WaveformDrawer::drawMaxADValue(int maxMicValue) {
-    M5.Lcd.drawString("Max AD Value: " + String(maxMicValue), 160, 10);
-    int max_dB = (maxMicValue-1920)*104/(4095-1920)+30;
-    M5.Lcd.drawString("dB: " + String(max_dB), 160, 30);
-}
-
-void WaveformDrawer::updateBuffer(int micWave) {
-    val_buf[write_index] = map(micWave * X_SCALE, 1800, 4095, 0, 100);
-    write_index = (write_index + 1) % MAX_LEN;
-    if (data_count < MAX_LEN) {
-        data_count++;
-    }
-}
-
 void IRAM_ATTR onTimerWave() {
     micWave = analogRead(36);
     waveformDrawer.drawWaveform();
