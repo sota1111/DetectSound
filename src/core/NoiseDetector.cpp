@@ -27,7 +27,7 @@ void NoiseDetector::initNoiseDetector() {
     // hello worldをGet
     // Lambdaからデータ取得
     HTTPClient http;
-    String url = "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/hello/";
+    String url = String(BASE_URL) + "hello/";
     http.begin(url);
     int httpCode = http.GET();
 
@@ -119,7 +119,7 @@ void NoiseDetector::logNoiseTimestamp() {
 
 void NoiseDetector::postCSVtoServer(const char* fileName) {
     HTTPClient http;
-    String url = "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/detect-sound";
+    String url = String(BASE_URL) + "detect-sound";
     File csvFile = SD.open(fileName, FILE_READ);
 
     if (!csvFile) {
@@ -169,7 +169,7 @@ void NoiseDetector::postCSVtoServer(const char* fileName) {
 
 void NoiseDetector::notificationAWS() {
     HTTPClient http;
-    String url = "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/notification";
+    String url = String(BASE_URL) + "notification";
     http.begin(url);
     // POSTリクエストを送信
     int httpCode = http.POST("notification");
