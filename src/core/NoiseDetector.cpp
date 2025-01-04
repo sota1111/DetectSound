@@ -20,7 +20,7 @@ NoiseDetector::NoiseDetector() : isRequestSpeaker(false), isDataStored(false), i
 }
 
 void NoiseDetector::initNoiseDetector() {
-    sdcardHandler.initSDCard("/Data");
+    sdcardHandler.initSDCard(APARTMENT_NAME, ROOM_NAME);
     wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
     wifiHandler.synchronizeTime();
 
@@ -99,7 +99,8 @@ void NoiseDetector::logNoiseTimestamp() {
 
         // CSVファイル名を生成
         char fileName[128];
-        snprintf(fileName, sizeof(fileName), "/Data/log_%s.csv", timestamp);
+        String dirName = "/" + String(APARTMENT_NAME) + "/" + String(ROOM_NAME);
+        snprintf(fileName, sizeof(fileName), "%s/log_%s.csv", dirName.c_str(), timestamp);
         File csvFile = SD.open(fileName, FILE_APPEND);
         csvFile.print(csvData.c_str());
         csvFile.close();
@@ -191,7 +192,7 @@ void NoiseDetector::storeNoise() {
     }
 
     if (isDataStored) {
-        notificationAWS();
+        //notificationAWS();
         logNoiseTimestamp();
         isDataStored = false;
         M5.Lcd.setCursor(0, 160);
@@ -206,6 +207,7 @@ void IRAM_ATTR onTimer() {
 }
 
 void NoiseDetector::startTimer() {
+    M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.println("NOISE DETECTING");
     timer = timerBegin(0, 80, true);
@@ -220,6 +222,7 @@ void NoiseDetector::restartTimer() {
     delay(1000);
     M5.Lcd.fillScreen(TFT_BLACK);
     delay(100);
+    M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.println("NOISE DETECTING");
     timerRestart(timer);

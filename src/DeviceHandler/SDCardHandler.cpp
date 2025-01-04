@@ -1,6 +1,6 @@
 #include "SDCardHandler.h"
 
-void SDCardHandler::initSDCard(const char* dirname) {
+void SDCardHandler::initSDCard(const char* apartmentName, const char* roomName) {
     if (!SD.begin(TFCARD_CS_PIN, SPI, 40000000)) {
         M5.Lcd.println("SD Card Mount Failed");
         delay(1000);
@@ -8,8 +8,17 @@ void SDCardHandler::initSDCard(const char* dirname) {
     }
     M5.Lcd.println("SD Card Mount Success");
     delay(1000);
-    if (!SD.exists(dirname)) {
-        SD.mkdir(dirname);
+
+    String firstDir = "/" + String(apartmentName);
+    if (!SD.exists(firstDir.c_str())) {
+        SD.mkdir(firstDir.c_str());
+        M5.Lcd.println("make directory " + firstDir);
+    }
+
+    String fullDir = "/" + String(apartmentName) + "/" + String(roomName);
+    if (!SD.exists(fullDir.c_str())) {
+        SD.mkdir(fullDir.c_str());
+        M5.Lcd.println("make directory " + fullDir);
     }
 }
 

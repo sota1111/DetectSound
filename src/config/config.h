@@ -18,6 +18,9 @@
 // サーバー関連
 #define BASE_URL "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/"
 
+// ファイル関連
+#define APARTMENT_NAME "APARTMENT_A"
+#define ROOM_NAME "ROOM_A"
 
 // 表示関連
 #define FONT_SIZE 2
