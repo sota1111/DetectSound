@@ -8,6 +8,7 @@ void setup() {
     M5.begin();
     //noiseDetector.initNoiseDetector();
     //noiseDetector.startTimer();
+    waveformDrawer.getADCAverage();
     waveformDrawer.startTimer();
 }
 
