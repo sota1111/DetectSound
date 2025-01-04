@@ -1,4 +1,8 @@
 #include "WaveformDrawer.h"
+#include <M5Stack.h>
+#include "Free_Fonts.h" 
+
+WaveformDrawer waveformDrawer;
 
 WaveformDrawer::WaveformDrawer() : write_index(0), data_count(0) {
     memset(val_buf, 0, sizeof(val_buf));
@@ -22,9 +26,6 @@ int WaveformDrawer::calcMaxADValue(int micValue) {
 }
 
 void WaveformDrawer::drawMaxADValue(int maxMicValue) {
-    M5.Lcd.setTextDatum(TC_DATUM);
-    M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
-    M5.Lcd.setTextSize(FONT_SIZE);
     M5.Lcd.drawString("Max AD Value: " + String(maxMicValue), 160, 10);
     int max_dB = (maxMicValue-1920)*104/(4095-1920)+30;
     M5.Lcd.drawString("dB: " + String(max_dB), 160, 30);
@@ -39,16 +40,22 @@ void WaveformDrawer::updateBuffer(int micValue) {
 }
 
 void WaveformDrawer::drawWaveform() {
-    if (data_count <= 1) return;
 
-    int read_index = write_index;
-    for (int i = 0; i < data_count - 1; i++) {
-        int next_index = (read_index + 1) % MAX_LEN;
-        M5.Lcd.drawLine(i + X_OFFSET, val_buf[read_index] + Y_OFFSET, 
-                        i + 1 + X_OFFSET, val_buf[next_index] + Y_OFFSET, TFT_GREEN);
-        read_index = next_index;
+  static int16_t val_buf[MAX_LEN] = {0};
+  static int16_t pt = MAX_LEN - 1;
+  int micValue = analogRead(MIC_Unit);
+  val_buf[pt] = map((int16_t)(micValue * X_SCALE), 1800, 4095,  0, 100);
+
+
+  if (--pt < 0) {
+    pt = MAX_LEN - 1;
+  }
+
+  for (int i = 1; i < (MAX_LEN); i++) {
+    uint16_t now_pt = (pt + i) % (MAX_LEN);
+    M5.Lcd.drawLine(i + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 2) % MAX_LEN] + Y_OFFSET, TFT_BLACK);
+    if (i < MAX_LEN - 1) {
+      M5.Lcd.drawLine(i + X_OFFSET, val_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, TFT_GREEN);
     }
-
-    int constantY = map(NOISE_CONSTANT_VALUE, 1800, 4095, 0, 100) + Y_OFFSET;
-    M5.Lcd.drawLine(X_OFFSET, constantY, X_OFFSET + MAX_LEN, constantY, TFT_RED);
+  }
 }
