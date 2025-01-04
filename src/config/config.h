@@ -15,6 +15,10 @@
 #define TIMEOUT_WIFI_CONNECT 30000
 #define JST (3600L * 9)
 
+// サーバー関連
+#define BASE_URL "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/"
+
+
 // 表示関連
 #define FONT_SIZE 2
 
