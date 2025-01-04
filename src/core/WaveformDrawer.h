@@ -8,6 +8,7 @@
 #define X_OFFSET 0
 #define Y_OFFSET 100
 #define X_SCALE 1
+#define MIC_Unit 36
 
 class WaveformDrawer {
 private:
@@ -22,5 +23,7 @@ public:
     void updateBuffer(int micValue);
     void drawWaveform();
 };
+
+extern WaveformDrawer waveformDrawer;
 
 #endif
