@@ -15,12 +15,11 @@ private:
     int16_t val_buf[MAX_LEN];
     int write_index;
     int data_count;
+    void drawStringWithFormat(const char* label, int value, int x, int y);
 
 public:
     WaveformDrawer();
-    int calcMaxADValue(int micValue);
-    void drawMaxADValue(int maxMicValue);
-    void updateBuffer(int micValue);
+    void getADCAverage();
     void startTimer();
     void drawWaveform();
 };
