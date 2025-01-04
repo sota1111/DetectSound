@@ -56,8 +56,7 @@ void NoiseDetector::updateBuffer(int micValue) {
         if((micValue > NOISE_CONSTANT_VALUE) && (isNoiseDetected == false)){
             isNoiseDetected = true;
             detect_index = write_index;
-            M5.Lcd.setCursor(0, 20);
-            M5.Lcd.printf("NOISE DETECTED");
+            M5.Lcd.println("NOISE DETECTED");
             startTime = millis();
         }
         if(isNoiseDetected){
@@ -70,13 +69,10 @@ void NoiseDetector::updateBuffer(int micValue) {
             isNoiseDetected = false;
             isRequestSpeaker = true;
             detect_count = 0;
-            M5.Lcd.setCursor(0, 40);
-            M5.Lcd.printf("BUFFER FULL");
-            M5.Lcd.setCursor(0, 60);
-            M5.Lcd.printf("STOP TIMER");
+            M5.Lcd.println("BUFFER FULL");
+            M5.Lcd.println("STOP TIMER");
             int stopTime = millis() - startTime;
-            M5.Lcd.setCursor(0, 80);
-            M5.Lcd.printf("Time: %d", stopTime);     
+            M5.Lcd.printf("Time: %d\n", stopTime);     
         }
     }
 }
@@ -104,15 +100,13 @@ void NoiseDetector::logNoiseTimestamp() {
         File csvFile = SD.open(fileName, FILE_APPEND);
         csvFile.print(csvData.c_str());
         csvFile.close();
-        M5.Lcd.setCursor(0, 100);
-        M5.Lcd.printf("STORE DATA");
+        M5.Lcd.println("STORE DATA");
 
         // POST処理を追加
         postCSVtoServer(fileName);
     } else {
         // 現在時刻が取得できなかった場合のエラーメッセージ
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 100);
         M5.Lcd.println("Current time has not been obtained.");
         delay(1000);
     }
@@ -125,7 +119,6 @@ void NoiseDetector::postCSVtoServer(const char* fileName) {
 
     if (!csvFile) {
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 140);
         M5.Lcd.println("Failed to open CSV file.");
         return;
     }
@@ -134,7 +127,6 @@ void NoiseDetector::postCSVtoServer(const char* fileName) {
     uint8_t* buffer = (uint8_t*)malloc(fileSize);
     if (buffer == NULL) {
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 140);
         M5.Lcd.println("Failed to allocate memory.");
         csvFile.close();
         return;
@@ -157,12 +149,10 @@ void NoiseDetector::postCSVtoServer(const char* fileName) {
 
     if (httpResponseCode > 0) {
         String response = http.getString();
-        M5.Lcd.setCursor(0, 140);
         M5.Lcd.println("Response: " + response);
     } else {
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 140);
-        M5.Lcd.printf("POST failed, error: %d", httpResponseCode);
+        M5.Lcd.printf("POST failed, error: %d\n", httpResponseCode);
     }
 
     http.end();
@@ -176,11 +166,8 @@ void NoiseDetector::notificationAWS() {
     int httpCode = http.POST("notification");
     if (httpCode > 0) {
         String response = http.getString();
-        M5.Lcd.setCursor(0, 120);
-        M5.Lcd.println("Notification:");
-        M5.Lcd.println(response);
+        M5.Lcd.println("Notification:" + response);
     } else {
-        M5.Lcd.setCursor(0, 120);
         M5.Lcd.println("HTTP POST failed, error: " + String(httpCode));
     }
 }
@@ -195,7 +182,6 @@ void NoiseDetector::storeNoise() {
         //notificationAWS();
         logNoiseTimestamp();
         isDataStored = false;
-        M5.Lcd.setCursor(0, 160);
         M5.Lcd.println("NOISE STORED");
         restartTimer();
     }
@@ -217,9 +203,8 @@ void NoiseDetector::startTimer() {
 }
 
 void NoiseDetector::restartTimer() {
-    M5.Lcd.setCursor(0, 180);
     M5.Lcd.println("Restart Timer");
-    delay(1000);
+    delay(10000);
     M5.Lcd.fillScreen(TFT_BLACK);
     delay(100);
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
