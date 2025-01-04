@@ -8,11 +8,12 @@ void setup() {
     M5.begin();
     //noiseDetector.initNoiseDetector();
     //noiseDetector.startTimer();
+    waveformDrawer.startTimer();
 }
 
 void loop() {
     //noiseDetector.storeNoise();
-    waveformDrawer.drawWaveform();
+    //waveformDrawer.drawWaveform();
 }
 
 
