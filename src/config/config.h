@@ -14,6 +14,7 @@
 #define NOISE_CONSTANT_VALUE (2500)
 
 #define TIME_IRQ (100) //us
+#define TIME_WAVE (20000) //us
 //#define RECORD_1s_LEN 1000*1000/TIME_IRQ
 // 10000を超えるデータはDRAMが足りない。PSRAMを使う必要がある。
 #define RECORD_BEFORE_LEN (5000)

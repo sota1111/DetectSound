@@ -11,7 +11,6 @@ NoiseDetector noiseDetector;
 WiFiHandler wifiHandler;
 
 volatile int micValue = 0;
-volatile unsigned long irqTime;
 hw_timer_t *timer = NULL;
 
 // 初期化
