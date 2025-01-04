@@ -27,7 +27,7 @@ void NoiseDetector::initNoiseDetector() {
     // hello worldをGet
     // Lambdaからデータ取得
     HTTPClient http;
-    String url = "https://k4eittjcp9.execute-api.ap-northeast-1.amazonaws.com/Prod/hello/";
+    String url = "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/hello/";
     http.begin(url);
     int httpCode = http.GET();
 
@@ -119,12 +119,12 @@ void NoiseDetector::logNoiseTimestamp() {
 
 void NoiseDetector::postCSVtoServer(const char* fileName) {
     HTTPClient http;
-    String url = "https://k4eittjcp9.execute-api.ap-northeast-1.amazonaws.com/Prod/detect-sound";
+    String url = "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/detect-sound";
     File csvFile = SD.open(fileName, FILE_READ);
 
     if (!csvFile) {
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.setCursor(0, 140);
         M5.Lcd.println("Failed to open CSV file.");
         return;
     }
@@ -133,7 +133,7 @@ void NoiseDetector::postCSVtoServer(const char* fileName) {
     uint8_t* buffer = (uint8_t*)malloc(fileSize);
     if (buffer == NULL) {
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.setCursor(0, 140);
         M5.Lcd.println("Failed to allocate memory.");
         csvFile.close();
         return;
@@ -156,15 +156,32 @@ void NoiseDetector::postCSVtoServer(const char* fileName) {
 
     if (httpResponseCode > 0) {
         String response = http.getString();
-        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.setCursor(0, 140);
         M5.Lcd.println("Response: " + response);
     } else {
         M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
-        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.setCursor(0, 140);
         M5.Lcd.printf("POST failed, error: %d", httpResponseCode);
     }
 
     http.end();
+}
+
+void NoiseDetector::notificationAWS() {
+    HTTPClient http;
+    String url = "https://6ansren87i.execute-api.ap-northeast-1.amazonaws.com/Prod/notification";
+    http.begin(url);
+    // POSTリクエストを送信
+    int httpCode = http.POST("notification");
+    if (httpCode > 0) {
+        String response = http.getString();
+        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.println("Notification:");
+        M5.Lcd.println(response);
+    } else {
+        M5.Lcd.setCursor(0, 120);
+        M5.Lcd.println("HTTP POST failed, error: " + String(httpCode));
+    }
 }
 
 void NoiseDetector::storeNoise() {
@@ -174,6 +191,7 @@ void NoiseDetector::storeNoise() {
     }
 
     if (isDataStored) {
+        notificationAWS();
         logNoiseTimestamp();
         isDataStored = false;
         M5.Lcd.setCursor(0, 160);
