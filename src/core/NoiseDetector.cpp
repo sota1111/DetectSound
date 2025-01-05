@@ -25,7 +25,8 @@ NoiseDetector::NoiseDetector() {
     integralValue = 0;
     sampleIntegralCount = 0;
     for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
-        noiseEventTimes[i] = 0;
+        noiseEventTimes_A[i] = 0;
+        noiseEventTimes_B[i] = 0;
     }
 }
 
@@ -61,7 +62,8 @@ void NoiseDetector::initBuf() {
         val_buf[i] = 0;
     }
     for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
-        noiseEventTimes[i] = 0;
+        noiseEventTimes_A[i] = 0;
+        noiseEventTimes_B[i] = 0;
     }
     integralValue = 0;
     sampleIntegralCount = 0;
@@ -76,8 +78,8 @@ void NoiseDetector::initNoiseDetector() {
     }
     initBuf();
     sdcardHandler.initSDCard(APARTMENT_NAME, ROOM_NAME);
-    //wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
-    //wifiHandler.synchronizeTime();
+    wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
+    wifiHandler.synchronizeTime();
 
     // hello worldをGet
     // Lambdaからデータ取得
@@ -108,27 +110,67 @@ int NoiseDetector::calculateDbValue(int avgIntegral) {
 }
 
 // 複数回検出
-bool NoiseDetector::detectNoise(int avgIntegral) {
-    static int noiseEventIndex = 0;
+bool NoiseDetector::detectNoise_A(int avgIntegral) {
+    static int noiseEventIndex_A = 0;
     int dBValue = calculateDbValue(avgIntegral);
     unsigned long currentTime = millis();
 
-    if (dBValue >= INSTANT_NOISE_THRESHOLD_DB) {
-        noiseEventTimes[noiseEventIndex] = currentTime;
-        noiseEventIndex = (noiseEventIndex + 1) % MAX_NOISE_EVENTS;
+    if (dBValue >= INSTANT_NOISE_THRESHOLD_DB_A) {
+        for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
+            long difTime = currentTime - noiseEventTimes_A[i];
+            if ((noiseEventTimes_A[i] != 0) && (difTime < TIME_IGNORE_NOISE_A)){
+                return false;
+            }   
+        }
+        noiseEventTimes_A[noiseEventIndex_A] = currentTime;
+        noiseEventIndex_A = (noiseEventIndex_A + 1) % MAX_NOISE_EVENTS;
 
-        unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND * 1000;
+        unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND_A * 1000;
         int eventCount = 1;
 
         for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
-            if (noiseEventTimes[i] != 0) {
-                long difTime = currentTime - noiseEventTimes[i];
-                if ((difTime <= observationTimeMillis) && (difTime >= TIME_IGNORE_NOISE)) {
+            if (noiseEventTimes_A[i] != 0) {
+                long difTime = currentTime - noiseEventTimes_A[i];
+                if (difTime <= observationTimeMillis) {
                     eventCount++;
                 }
             }
         }
-        if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD) {
+        if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD_A) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool NoiseDetector::detectNoise_B(int avgIntegral) {
+    static int noiseEventIndex_B = 0;
+    int dBValue = calculateDbValue(avgIntegral);
+    unsigned long currentTime = millis();
+
+    if (dBValue >= INSTANT_NOISE_THRESHOLD_DB_B) {
+        for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
+            long difTime = currentTime - noiseEventTimes_B[i];
+            if ((noiseEventTimes_B[i] != 0) && (difTime < TIME_IGNORE_NOISE_B)){
+                return false;
+            }   
+        }
+        noiseEventTimes_B[noiseEventIndex_B] = currentTime;
+        noiseEventIndex_B = (noiseEventIndex_B + 1) % MAX_NOISE_EVENTS;
+
+        unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND_B * 1000;
+        int eventCount = 1;
+
+        for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
+            if (noiseEventTimes_B[i] != 0) {
+                long difTime = currentTime - noiseEventTimes_B[i];
+                if (difTime <= observationTimeMillis) {
+                    eventCount++;
+                }
+            }
+        }
+        if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD_B) {
             return true;
         }
     }
@@ -173,7 +215,7 @@ void NoiseDetector::updateBuffer(int micValue) {
         int avgIntegral = calculateMovingIntegral(micValue, write_index);
 
         // ノイズ検出
-        if ((detectNoise(avgIntegral)) && (isNoiseDetected == false)) {
+        if ( (detectNoise_A(avgIntegral) || detectNoise_B(avgIntegral)) && (isNoiseDetected == false) ) {
             isNoiseDetected = true;
             detect_index = write_index;
             M5.Lcd.println("NOISE DETECTED");
