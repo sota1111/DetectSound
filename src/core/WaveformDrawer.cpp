@@ -9,7 +9,51 @@ hw_timer_t *timer_wave = NULL;
 volatile int16_t adcAverage = 0;
 
 WaveformDrawer::WaveformDrawer() : write_index(0), data_count(0) {
-    memset(val_buf, 0, sizeof(val_buf));
+}
+
+WaveformDrawer::~WaveformDrawer() {
+    freeBuffer();
+}
+
+void WaveformDrawer::freeBuffer() {
+    if (adc_buf) {
+        delete[] adc_buf;
+        adc_buf = nullptr;
+
+    }
+    if (val_buf) {
+        delete[] val_buf;
+        val_buf = nullptr;
+    }
+    if (integ_buf) {
+        delete[] integ_buf;
+        integ_buf = nullptr;
+    }
+    M5.Lcd.println("Buffer freed");
+}
+
+void WaveformDrawer::initWaveformDrawer() {
+    freeBuffer();
+    adc_buf = new int16_t[GRAPH_MAX_LEN];
+    if (adc_buf == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
+    val_buf = new int16_t[GRAPH_MAX_LEN];
+    if (val_buf == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
+    integ_buf = new int16_t[GRAPH_MAX_LEN];
+    if (integ_buf == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
+    for (int i = 0; i < GRAPH_MAX_LEN; i++) {
+        adc_buf[i] = 0;
+        val_buf[i] = 0;
+        integ_buf[i] = 0;
+    }
 }
 
 // 1秒間のAD変換値の平均を取得する関数
@@ -57,10 +101,7 @@ void WaveformDrawer::drawWaveform() {
     drawStringWithFormat("micWave Value", (int)micWave, 0, 10);
     drawStringWithFormat("Graph Value", (int)abs(adcVal), 0, 20);
 
-    static int16_t adc_buf[MAX_LEN] = {0};
-    static int16_t val_buf[MAX_LEN] = {0};
-    static int16_t integ_buf[MAX_LEN] = {0};
-    static int16_t pt = MAX_LEN - 1;
+    static int16_t pt = GRAPH_MAX_LEN - 1;
     // 移動積分を管理するための変数
     static long integralValue = 0;       // 移動積分値(直近 N サンプルの合計)
     static int  sampleCount   = 0;       // 何サンプル蓄積したか(立ち上がり時用)
@@ -74,7 +115,7 @@ void WaveformDrawer::drawWaveform() {
       // まだ N サンプルに達していない場合 (立ち上がり時)
       sampleCount++;
     } else {
-      uint16_t oldPos = (pt + INTEGRAL_SAMPLES) % MAX_LEN;
+      uint16_t oldPos = (pt + INTEGRAL_SAMPLES) % GRAPH_MAX_LEN;
       integralValue -= abs(adc_buf[oldPos]);
     }
     integ_buf[pt] = map((int16_t)(-integralValue / INTEGRAL_SAMPLES), -2048, 2048, 0, 100);
@@ -95,22 +136,17 @@ void WaveformDrawer::drawWaveform() {
     drawStringWithFormat("dBValue", (int)dBValue, 0, 40);
 
     if (--pt < 0) {
-        pt = MAX_LEN - 1;
+        pt = GRAPH_MAX_LEN - 1;
     }
 
-    for (int i = 1; i < (MAX_LEN); i++) {
-        uint16_t now_pt = (pt + i) % (MAX_LEN);
-        M5.Lcd.drawLine(i + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 2) % MAX_LEN] + Y_OFFSET, TFT_BLACK);
-        if (i < MAX_LEN - 1) {
-            M5.Lcd.drawLine(i + X_OFFSET, val_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, TFT_GREEN);
-        }
-    }
-
-    for (int i = 1; i < (MAX_LEN); i++) {
-        uint16_t now_pt = (pt + i) % (MAX_LEN);
-        M5.Lcd.drawLine(i + X_OFFSET, integ_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, integ_buf[(now_pt + 2) % MAX_LEN] + Y_OFFSET, TFT_BLACK);
-        if (i < MAX_LEN - 1) {
-            M5.Lcd.drawLine(i + X_OFFSET, integ_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, integ_buf[(now_pt + 1) % MAX_LEN] + Y_OFFSET, TFT_BLUE);
+    static int countGraphX;
+    for (int i = 1; i < (GRAPH_MAX_LEN); i++) {
+        uint16_t now_pt = (pt + i) % (GRAPH_MAX_LEN);
+        M5.Lcd.drawLine(i + X_OFFSET, val_buf[(now_pt + 1) % GRAPH_MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 2) % GRAPH_MAX_LEN] + Y_OFFSET, TFT_BLACK);
+        M5.Lcd.drawLine(i + X_OFFSET, integ_buf[(now_pt + 1) % GRAPH_MAX_LEN] + Y_OFFSET, i + 1 + X_OFFSET, integ_buf[(now_pt + 2) % GRAPH_MAX_LEN] + Y_OFFSET, TFT_BLACK);
+        if (i < GRAPH_MAX_LEN - 1) {
+            M5.Lcd.drawLine(i + X_OFFSET, val_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, val_buf[(now_pt + 1) % GRAPH_MAX_LEN] + Y_OFFSET, TFT_GREEN);
+            M5.Lcd.drawLine(i + X_OFFSET, integ_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, integ_buf[(now_pt + 1) % GRAPH_MAX_LEN] + Y_OFFSET, TFT_BLUE);
         }
     }
 }
