@@ -15,6 +15,8 @@ private:
     unsigned int write_index;
     unsigned int detect_index;
     int16_t* val_buf=nullptr;
+    bool detectNoise(int avgIntegral);
+    int calculateMovingIntegral(int currentMicValue, int writeIndex);
     void logNoiseTimestamp();
     void notificationAWS();
     void postCSVtoServer(const char* fileName);

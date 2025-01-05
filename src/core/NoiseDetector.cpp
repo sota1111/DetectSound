@@ -79,45 +79,64 @@ void NoiseDetector::initNoiseDetector() {
     M5.Lcd.fillScreen(TFT_BLACK);
 }
 
+bool NoiseDetector::detectNoise(int avgIntegral) {
+    // 0 → 40dB, 100 → 60dB, 500 → 80dB になるように補完
+    int dBValue;
+    if (avgIntegral < 100) {
+        // f(x) = 40 + ((80 - 40) / 200) * x = 40 + 0.2 * x
+        dBValue = 40 + (2 * avgIntegral)/10;
+    } else {
+        // 60.0f + (80.0f - 60.0f) * ((float)x - 100.0f) / 400.0f;
+        // y = 60 + 0.05 * (x - 100)
+        dBValue = 60 + (avgIntegral - 100)/20;
+    }
+
+    if (dBValue > NOISE_ALERT_THRESHOLD_DB) {
+        return true;
+    }
+    return false;
+}
+
+// ============================================================
+//  移動積分を計算する関数
+// ============================================================
+int NoiseDetector::calculateMovingIntegral(int currentMicValue, int writeIndex)
+{
+    static long s_integralValue = 0;
+    static int  s_sampleCount   = 0;
+
+    int16_t adcVal = abs(currentMicValue - adcAverageDetect);
+    s_integralValue += adcVal;
+
+    if (s_sampleCount < INTEGRAL_SAMPLES_DETECT) {
+        s_sampleCount++;
+    } else {
+        int prevIndex       = writeIndex - INTEGRAL_SAMPLES_DETECT;
+        unsigned int oldPos = (prevIndex + RECORD_MAX_LEN) % RECORD_MAX_LEN;
+        s_integralValue    -= abs(val_buf[oldPos] - adcAverageDetect);
+    }
+
+    int avgIntegral = s_integralValue / s_sampleCount;
+    return avgIntegral;
+}
+
+// ============================================================
+//  updateBuffer から移動積分の計算処理を関数呼び出しに置き換え
+// ============================================================
 void NoiseDetector::updateBuffer(int micValue) {
     static unsigned int detect_count = 0;
-    static bool isNoiseDetected = false;
-    static unsigned int startTime = 0;
+    static bool isNoiseDetected      = false;
+    static unsigned int startTime    = 0;
 
-    if(!isDataStored){
-        // ノイズを検出前後のデータを記録        
+    if (!isDataStored) {
+        // ノイズ検出前後のデータを記録        
         write_index = (write_index + 1) % RECORD_MAX_LEN;
         val_buf[write_index] = micValue;
 
-        // === 移動積分の計算ロジック ===
-        static long integralValue = 0;
-        static int  sampleCount   = 0;
+        int avgIntegral = calculateMovingIntegral(micValue, write_index);
 
-        int16_t adcVal = abs(micValue - adcAverageDetect);
-        integralValue += adcVal;
-
-        if (sampleCount < INTEGRAL_SAMPLES_DETECT) {
-            // まだ N サンプルに達していない場合 (立ち上がり時)
-            sampleCount++;
-        } else {
-            int prevIndex = write_index - INTEGRAL_SAMPLES_DETECT;
-            unsigned int oldPos = (prevIndex + RECORD_MAX_LEN) % RECORD_MAX_LEN;
-            integralValue -= abs(val_buf[oldPos] - adcAverageDetect);
-        }
-        int avgIntegral = integralValue / sampleCount;
-        // 0 → 40dB, 100 → 60dB, 500 → 80dB になるように補完
-        int dBValue;
-        if (avgIntegral < 100) {
-            // f(x) = 40 + ((80 - 40) / 200) * x = 40 + 0.2 * x
-            dBValue = 40 + (2 * avgIntegral)/10;
-        } else {
-            // 60.0f + (80.0f - 60.0f) * ((float)x - 100.0f) / 400.0f;
-            // y = 60 + 0.05 * (x - 100)
-            dBValue = 60 + (avgIntegral - 100)/20;
-        }
-        
         // ノイズ検出
-        if((dBValue > NOISE_ALERT_THRESHOLD_DB) && (isNoiseDetected == false)){
+        if ((detectNoise(avgIntegral)) && (isNoiseDetected == false)) {
             isNoiseDetected = true;
             detect_index = write_index;
             M5.Lcd.println("NOISE DETECTED");
