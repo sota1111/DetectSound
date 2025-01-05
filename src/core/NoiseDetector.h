@@ -24,6 +24,7 @@ public:
     NoiseDetector();
     ~NoiseDetector();
     void initNoiseDetector();
+    void getADCAverage();
     void updateBuffer(int micValue);
     void startTimer();
     void restartTimer();
