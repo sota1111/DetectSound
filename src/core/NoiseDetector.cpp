@@ -203,7 +203,7 @@ void NoiseDetector::startTimer() {
 
 void NoiseDetector::restartTimer() {
     M5.Lcd.println("Restart Timer");
-    delay(10000);
+    delay(1000);
     M5.Lcd.fillScreen(TFT_BLACK);
     delay(100);
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
