@@ -54,9 +54,8 @@ void WaveformDrawer::drawWaveform() {
     lastTime = currentTime;
 
     int16_t adcVal = micWave - adcAverage;
-    drawStringWithFormat("adcAverage Value", (int)adcAverage, 0, 10);
-    drawStringWithFormat("micWave Value", (int)micWave, 0, 20);
-    drawStringWithFormat("Graph Value", (int)abs(adcVal), 0, 30);
+    drawStringWithFormat("micWave Value", (int)micWave, 0, 10);
+    drawStringWithFormat("Graph Value", (int)abs(adcVal), 0, 20);
 
     static int16_t adc_buf[MAX_LEN] = {0};
     static int16_t val_buf[MAX_LEN] = {0};
@@ -79,7 +78,21 @@ void WaveformDrawer::drawWaveform() {
       integralValue -= abs(adc_buf[oldPos]);
     }
     integ_buf[pt] = map((int16_t)(-integralValue / INTEGRAL_SAMPLES), -2048, 2048, 0, 100);
-    drawStringWithFormat("IntegralValue", (int)integralValue/INTEGRAL_SAMPLES, 0, 40);
+    int16_t avgIntegral = integralValue / INTEGRAL_SAMPLES;
+    drawStringWithFormat("IntegralValue", (int)avgIntegral, 0, 30);
+
+    // 0 → 40dB, 100 → 60dB, 500 → 80dB になるように補完
+    int dBValue;
+    if (avgIntegral < 100) {
+        // f(x) = 40 + ((80 - 40) / 200) * x = 40 + 0.2 * x
+        dBValue = 40 + (2 * avgIntegral)/10;
+    } else {
+        // 60.0f + (80.0f - 60.0f) * ((float)x - 100.0f) / 400.0f;
+        // y = 60 + 0.05 * (x - 100)
+        dBValue = 60 + (avgIntegral - 100)/20;
+    }
+    
+    drawStringWithFormat("dBValue", (int)dBValue, 0, 40);
 
     if (--pt < 0) {
         pt = MAX_LEN - 1;
