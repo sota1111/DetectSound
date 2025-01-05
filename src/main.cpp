@@ -32,6 +32,7 @@ void loop() {
             M5.Lcd.setCursor(0, 0);
             M5.Lcd.printf("Starting Noise Detector...\n");
             noiseDetector.initNoiseDetector();
+            noiseDetector.getADCAverage();
             noiseDetector.startTimer();
             currentMode = NOISE_DETECTOR;
         } else if (M5.BtnC.wasPressed()) {  // 右ボタン

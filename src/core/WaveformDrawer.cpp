@@ -102,13 +102,13 @@ void WaveformDrawer::drawWaveform() {
     drawStringWithFormat("Graph Value", (int)abs(adcVal), 0, 20);
 
     static int16_t pt = GRAPH_MAX_LEN - 1;
-    // 移動積分を管理するための変数
-    static long integralValue = 0;       // 移動積分値(直近 N サンプルの合計)
-    static int  sampleCount   = 0;       // 何サンプル蓄積したか(立ち上がり時用)
     adc_buf[pt] = adcVal;
     val_buf[pt] = map((int16_t)(adcVal * X_SCALE), -2048, 2048,  0, 100);
 
     // === 移動積分の計算ロジック ===
+    static long integralValue = 0;       // 移動積分値(直近 N サンプルの合計)
+    static int  sampleCount   = 0;       // 何サンプル蓄積したか(立ち上がり時用)
+
     integralValue += abs(adcVal);
 
     if (sampleCount < INTEGRAL_SAMPLES) {
@@ -119,7 +119,7 @@ void WaveformDrawer::drawWaveform() {
       integralValue -= abs(adc_buf[oldPos]);
     }
     integ_buf[pt] = map((int16_t)(-integralValue / INTEGRAL_SAMPLES), -2048, 2048, 0, 100);
-    int16_t avgIntegral = integralValue / INTEGRAL_SAMPLES;
+    int16_t avgIntegral = integralValue / sampleCount;
     drawStringWithFormat("IntegralValue", (int)avgIntegral, 0, 30);
 
     // 0 → 40dB, 100 → 60dB, 500 → 80dB になるように補完
