@@ -14,13 +14,15 @@ private:
     bool isTimerStopped;
     unsigned int write_index;
     unsigned int detect_index;
-    int16_t val_buf[RECORD_MAX_LEN];
+    int16_t* val_buf=nullptr;
     void logNoiseTimestamp();
     void notificationAWS();
     void postCSVtoServer(const char* fileName);
+    void freeBuffer();
 
 public:
     NoiseDetector();
+    ~NoiseDetector();
     void initNoiseDetector();
     void updateBuffer(int micValue);
     void startTimer();

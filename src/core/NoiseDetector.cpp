@@ -15,10 +15,28 @@ hw_timer_t *timer = NULL;
 
 // 初期化
 NoiseDetector::NoiseDetector() : isRequestSpeaker(false), isDataStored(false), isTimerStopped(false), write_index(0), detect_index(0) {
-    memset(val_buf, 0, sizeof(val_buf));
+}
+
+NoiseDetector::~NoiseDetector() {
+    freeBuffer();
+}
+
+void NoiseDetector::freeBuffer() {
+    if (val_buf) {
+        delete[] val_buf;
+        val_buf = nullptr;
+        M5.Lcd.println("Buffer freed");
+    }
 }
 
 void NoiseDetector::initNoiseDetector() {
+    freeBuffer();  // 以前のバッファがあれば解放
+    val_buf = new int16_t[RECORD_MAX_LEN];  // バッファを動的に確保
+    if (val_buf == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
+
     sdcardHandler.initSDCard(APARTMENT_NAME, ROOM_NAME);
     wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
     wifiHandler.synchronizeTime();

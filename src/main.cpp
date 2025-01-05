@@ -24,7 +24,6 @@ void setup() {
 }
 
 void loop() {
-    
 
     if (currentMode == NONE) {
         M5.update();
@@ -32,12 +31,14 @@ void loop() {
             M5.Lcd.clear();
             M5.Lcd.setCursor(0, 0);
             M5.Lcd.printf("Starting Noise Detector...\n");
-            //noiseDetector.initNoiseDetector();
-            //noiseDetector.startTimer();
+            noiseDetector.initNoiseDetector();
+            noiseDetector.startTimer();
             currentMode = NOISE_DETECTOR;
         } else if (M5.BtnC.wasPressed()) {  // 右ボタン
             M5.Lcd.clear();
+            M5.Lcd.setCursor(0, 0);
             M5.Lcd.printf("Starting Waveform Drawer...\n");
+            waveformDrawer.initWaveformDrawer();
             waveformDrawer.getADCAverage();
             waveformDrawer.startTimer();
             M5.Lcd.clear();
@@ -47,7 +48,6 @@ void loop() {
         if (currentMode == NOISE_DETECTOR) {
             noiseDetector.storeNoise();
         } else if (currentMode == WAVEFORM_DRAWER) {
-            waveformDrawer.drawWaveform();
         }
     }
 }
