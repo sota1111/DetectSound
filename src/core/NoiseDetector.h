@@ -15,11 +15,15 @@ private:
     unsigned int write_index;
     unsigned int detect_index;
     int16_t* val_buf=nullptr;
-    unsigned long noiseEventTimes[MAX_NOISE_EVENTS];
+    // 騒音検出
+    unsigned long noiseEventTimes_A[MAX_NOISE_EVENTS];
+    unsigned long noiseEventTimes_B[MAX_NOISE_EVENTS];
     long integralValue;
     int  sampleIntegralCount;
+
     void initBuf();
-    bool detectNoise(int avgIntegral);
+    bool detectNoise_A(int avgIntegral);
+    bool detectNoise_B(int avgIntegral);
     int calculateDbValue(int avgIntegral);
     int calculateMovingIntegral(int currentMicValue, int writeIndex);
     void logNoiseTimestamp();
