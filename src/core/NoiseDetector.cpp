@@ -57,8 +57,8 @@ void NoiseDetector::initNoiseDetector() {
     }
 
     sdcardHandler.initSDCard(APARTMENT_NAME, ROOM_NAME);
-    //wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
-    //wifiHandler.synchronizeTime();
+    wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
+    wifiHandler.synchronizeTime();
 
     // hello worldをGet
     // Lambdaからデータ取得
@@ -96,19 +96,13 @@ void NoiseDetector::updateBuffer(int micValue) {
         int16_t adcVal = abs(micValue - adcAverageDetect);
         integralValue += adcVal;
 
-        int16_t adcValPos=0;
-        unsigned int oldPos=0;
-        int val_buf_oldPos=0;
-
         if (sampleCount < INTEGRAL_SAMPLES_DETECT) {
             // まだ N サンプルに達していない場合 (立ち上がり時)
             sampleCount++;
         } else {
             int prevIndex = write_index - INTEGRAL_SAMPLES_DETECT;
-            oldPos = (prevIndex + RECORD_MAX_LEN) % RECORD_MAX_LEN;
-            val_buf_oldPos = val_buf[oldPos];
-            adcValPos = abs(val_buf[oldPos] - adcAverageDetect);
-            integralValue -= adcValPos;
+            unsigned int oldPos = (prevIndex + RECORD_MAX_LEN) % RECORD_MAX_LEN;
+            integralValue -= abs(val_buf[oldPos] - adcAverageDetect);
         }
         int avgIntegral = integralValue / sampleCount;
         // 0 → 40dB, 100 → 60dB, 500 → 80dB になるように補完
@@ -121,26 +115,6 @@ void NoiseDetector::updateBuffer(int micValue) {
             // y = 60 + 0.05 * (x - 100)
             dBValue = 60 + (avgIntegral - 100)/20;
         }
-
-        char buffer[32];
-        sprintf(buffer, "micValue: %8d", micValue);
-        M5.Lcd.drawString(buffer, 0, 30);
-        sprintf(buffer, "adcAverageDetect: %8d", adcAverageDetect);
-        M5.Lcd.drawString(buffer, 0, 40);
-        sprintf(buffer, "adcVal: %8d", adcVal);
-        M5.Lcd.drawString(buffer, 0, 50);
-        sprintf(buffer, "oldPos: %8d", oldPos);
-        M5.Lcd.drawString(buffer, 0, 60);
-        sprintf(buffer, "val_buf_oldPos: %8d", val_buf_oldPos);
-        M5.Lcd.drawString(buffer, 0, 70);
-        sprintf(buffer, "adcValPos: %8d", adcValPos);
-        M5.Lcd.drawString(buffer, 0, 80);
-        sprintf(buffer, "integralValue: %8d", integralValue);
-        M5.Lcd.drawString(buffer, 0, 90);
-        sprintf(buffer, "avgIntegral: %8d", avgIntegral);
-        M5.Lcd.drawString(buffer, 0, 100);
-        sprintf(buffer, "dBValue: %8d", dBValue);
-        M5.Lcd.drawString(buffer, 0, 110);
         
         // ノイズ検出
         if((dBValue > NOISE_ALERT_THRESHOLD_DB) && (isNoiseDetected == false)){
