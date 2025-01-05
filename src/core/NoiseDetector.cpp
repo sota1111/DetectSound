@@ -98,6 +98,7 @@ void NoiseDetector::initNoiseDetector() {
     M5.Lcd.fillScreen(TFT_BLACK);
 }
 
+// デシベル変換
 int NoiseDetector::calculateDbValue(int avgIntegral) {
     if (avgIntegral < 100) {
         return 40 + (2 * avgIntegral) / 10;
@@ -106,43 +107,34 @@ int NoiseDetector::calculateDbValue(int avgIntegral) {
     }
 }
 
+// 複数回検出
 bool NoiseDetector::detectNoise(int avgIntegral) {
     static int noiseEventIndex = 0;
-    M5.Lcd.setCursor(0, 20);
-    // M5.Lcd.printf("avgIntegral: %4d\n", avgIntegral);
-
     int dBValue = calculateDbValue(avgIntegral);
-    // M5.Lcd.printf("dB: %4d\n", dBValue);
-
     unsigned long currentTime = millis();
 
     if (dBValue >= INSTANT_NOISE_THRESHOLD_DB) {
-        // ノイズが閾値を超えたときの記録
-        noiseEventTimes[noiseEventIndex] = currentTime;  // 現在時刻を保存
-        noiseEventIndex = (noiseEventIndex + 1) % MAX_NOISE_EVENTS;  // 次の位置に移動（リングバッファ）
-    }
+        noiseEventTimes[noiseEventIndex] = currentTime;
+        noiseEventIndex = (noiseEventIndex + 1) % MAX_NOISE_EVENTS;
 
-    unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND * 1000;  // 観測時間をミリ秒に変換
-    int eventCount = 0;
+        unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND * 1000;
+        int eventCount = 1;
 
-    // イベント数のカウント
-    for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
-        if (noiseEventTimes[i] != 0) {
-            long difTime = currentTime - noiseEventTimes[i];
-            if ((difTime <= observationTimeMillis) && (difTime >= TIME_IGNORE_NOISE)) {
-                eventCount++;
+        for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
+            if (noiseEventTimes[i] != 0) {
+                long difTime = currentTime - noiseEventTimes[i];
+                if ((difTime <= observationTimeMillis) && (difTime >= TIME_IGNORE_NOISE)) {
+                    eventCount++;
+                }
             }
+        }
+        if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD) {
+            return true;
         }
     }
 
-    // M5.Lcd.printf("eventCount: %4d\n", eventCount);
-
-    if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD) {
-        return true;
-    }
     return false;
 }
-
 
 // ============================================================
 //  移動積分を計算する関数
@@ -177,13 +169,10 @@ void NoiseDetector::updateBuffer(int micValue) {
         write_index = (write_index + 1) % RECORD_MAX_LEN;
         val_buf[write_index] = micValue;
 
+        // 移動積分の計算
         int avgIntegral = calculateMovingIntegral(micValue, write_index);
 
         // ノイズ検出
-        //bool detectNoise_bool = false;
-        //detectNoise_bool = detectNoise(avgIntegral);
-        //M5.Lcd.setCursor(0, 200);
-        //M5.Lcd.printf("detectNoise_bool: %4d\n", detectNoise_bool);
         if ((detectNoise(avgIntegral)) && (isNoiseDetected == false)) {
             isNoiseDetected = true;
             detect_index = write_index;
