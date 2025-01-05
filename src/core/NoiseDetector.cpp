@@ -15,7 +15,18 @@ hw_timer_t *timer = NULL;
 volatile int16_t adcAverageDetect = 0;
 
 // 初期化
-NoiseDetector::NoiseDetector() : isRequestSpeaker(false), isDataStored(false), isTimerStopped(false), write_index(0), detect_index(0) {
+NoiseDetector::NoiseDetector() {
+    val_buf = nullptr;
+    isRequestSpeaker = false;
+    isDataStored = false;
+    isTimerStopped = false;
+    write_index = 0;
+    detect_index = 0;
+    integralValue = 0;
+    sampleIntegralCount = 0;
+    for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
+        noiseEventTimes[i] = 0;
+    }
 }
 
 NoiseDetector::~NoiseDetector() {
@@ -45,6 +56,17 @@ void NoiseDetector::getADCAverage() {
     adcAverageDetect = (int16_t)(sum / count);
 }
 
+void NoiseDetector::initBuf() {
+    for (int i = 0; i < RECORD_MAX_LEN; i++) {
+        val_buf[i] = 0;
+    }
+    for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
+        noiseEventTimes[i] = 0;
+    }
+    integralValue = 0;
+    sampleIntegralCount = 0;
+}
+
 void NoiseDetector::initNoiseDetector() {
     freeBuffer();  // 以前のバッファがあれば解放
     val_buf = new int16_t[RECORD_MAX_LEN];  // バッファを動的に確保
@@ -52,13 +74,10 @@ void NoiseDetector::initNoiseDetector() {
         M5.Lcd.println("Failed to allocate buffer");
         return;
     }
-    for (int i = 0; i < RECORD_MAX_LEN; i++) {
-        val_buf[i] = 0;
-    }
-
+    initBuf();
     sdcardHandler.initSDCard(APARTMENT_NAME, ROOM_NAME);
-    wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
-    wifiHandler.synchronizeTime();
+    //wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
+    //wifiHandler.synchronizeTime();
 
     // hello worldをGet
     // Lambdaからデータ取得
@@ -79,44 +98,69 @@ void NoiseDetector::initNoiseDetector() {
     M5.Lcd.fillScreen(TFT_BLACK);
 }
 
-bool NoiseDetector::detectNoise(int avgIntegral) {
-    // 0 → 40dB, 100 → 60dB, 500 → 80dB になるように補完
-    int dBValue;
+int NoiseDetector::calculateDbValue(int avgIntegral) {
     if (avgIntegral < 100) {
-        // f(x) = 40 + ((80 - 40) / 200) * x = 40 + 0.2 * x
-        dBValue = 40 + (2 * avgIntegral)/10;
+        return 40 + (2 * avgIntegral) / 10;
     } else {
-        // 60.0f + (80.0f - 60.0f) * ((float)x - 100.0f) / 400.0f;
-        // y = 60 + 0.05 * (x - 100)
-        dBValue = 60 + (avgIntegral - 100)/20;
+        return 60 + (avgIntegral - 100) / 20;
+    }
+}
+
+bool NoiseDetector::detectNoise(int avgIntegral) {
+    static int noiseEventIndex = 0;
+    M5.Lcd.setCursor(0, 20);
+    // M5.Lcd.printf("avgIntegral: %4d\n", avgIntegral);
+
+    int dBValue = calculateDbValue(avgIntegral);
+    // M5.Lcd.printf("dB: %4d\n", dBValue);
+
+    unsigned long currentTime = millis();
+
+    if (dBValue >= INSTANT_NOISE_THRESHOLD_DB) {
+        // ノイズが閾値を超えたときの記録
+        noiseEventTimes[noiseEventIndex] = currentTime;  // 現在時刻を保存
+        noiseEventIndex = (noiseEventIndex + 1) % MAX_NOISE_EVENTS;  // 次の位置に移動（リングバッファ）
     }
 
-    if (dBValue > NOISE_ALERT_THRESHOLD_DB) {
+    unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND * 1000;  // 観測時間をミリ秒に変換
+    int eventCount = 0;
+
+    // イベント数のカウント
+    for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
+        if (noiseEventTimes[i] != 0) {
+            long difTime = currentTime - noiseEventTimes[i];
+            if ((difTime <= observationTimeMillis) && (difTime >= TIME_IGNORE_NOISE)) {
+                eventCount++;
+            }
+        }
+    }
+
+    // M5.Lcd.printf("eventCount: %4d\n", eventCount);
+
+    if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD) {
         return true;
     }
     return false;
 }
+
 
 // ============================================================
 //  移動積分を計算する関数
 // ============================================================
 int NoiseDetector::calculateMovingIntegral(int currentMicValue, int writeIndex)
 {
-    static long s_integralValue = 0;
-    static int  s_sampleCount   = 0;
-
     int16_t adcVal = abs(currentMicValue - adcAverageDetect);
-    s_integralValue += adcVal;
+    integralValue += adcVal;
 
-    if (s_sampleCount < INTEGRAL_SAMPLES_DETECT) {
-        s_sampleCount++;
+    if (sampleIntegralCount < INTEGRAL_SAMPLES_DETECT) {
+        sampleIntegralCount++;
     } else {
         int prevIndex       = writeIndex - INTEGRAL_SAMPLES_DETECT;
         unsigned int oldPos = (prevIndex + RECORD_MAX_LEN) % RECORD_MAX_LEN;
-        s_integralValue    -= abs(val_buf[oldPos] - adcAverageDetect);
+        integralValue    -= abs(val_buf[oldPos] - adcAverageDetect);
     }
 
-    int avgIntegral = s_integralValue / s_sampleCount;
+    int avgIntegral = integralValue / sampleIntegralCount;
     return avgIntegral;
 }
 
@@ -136,6 +180,10 @@ void NoiseDetector::updateBuffer(int micValue) {
         int avgIntegral = calculateMovingIntegral(micValue, write_index);
 
         // ノイズ検出
+        //bool detectNoise_bool = false;
+        //detectNoise_bool = detectNoise(avgIntegral);
+        //M5.Lcd.setCursor(0, 200);
+        //M5.Lcd.printf("detectNoise_bool: %4d\n", detectNoise_bool);
         if ((detectNoise(avgIntegral)) && (isNoiseDetected == false)) {
             isNoiseDetected = true;
             detect_index = write_index;
@@ -293,6 +341,7 @@ void NoiseDetector::restartTimer() {
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.println("NOISE DETECTING");
+    initBuf();
     timerRestart(timer);
     timerStart(timer);
     delay(100);
