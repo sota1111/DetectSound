@@ -1,4 +1,4 @@
 .pio
 .vscode/*
-src/secret.h
 .DS_Store
+src/config/sercret.h
