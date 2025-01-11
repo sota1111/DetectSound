@@ -29,8 +29,8 @@
 #define INTEGRAL_SAMPLES_DETECT (TIME_INTEGRAL_DETECT / TIME_IRQ)
 
 // グラフ描画
-#define TIME_WAVE (50*1000) //us
-#define TIME_INTEGRAL (500*1000) //us
+#define TIME_WAVE (200) //us
+#define TIME_INTEGRAL (200) //us
 #define INTEGRAL_SAMPLES (TIME_INTEGRAL / TIME_WAVE)
 
 // デバイス管理

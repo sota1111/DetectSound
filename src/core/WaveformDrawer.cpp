@@ -9,7 +9,12 @@ volatile int16_t micWave = 0;
 hw_timer_t *timer_wave = NULL;
 volatile int16_t adcAverage = 0;
 
-WaveformDrawer::WaveformDrawer() : write_index(0), data_count(0) {
+WaveformDrawer::WaveformDrawer() {
+    adc_buf = nullptr;
+    val_buf = nullptr;
+    integ_buf = nullptr;
+    vReal = nullptr;
+    vImag = nullptr;
 }
 
 WaveformDrawer::~WaveformDrawer() {
@@ -38,7 +43,7 @@ void WaveformDrawer::freeBuffer() {
         delete[] vImag;
         vImag = nullptr;
     }
-    M5.Lcd.println("Buffer freed");
+    //M5.Lcd.println("Buffer freed");
 }
 
 void WaveformDrawer::initWaveformDrawer() {
@@ -100,44 +105,112 @@ void IRAM_ATTR onTimerWave() {
 }
 
 void WaveformDrawer::startTimer() {
+    M5.Lcd.fillScreen(BLACK);
     timer_wave = timerBegin(1, 80, true);
     timerAttachInterrupt(timer_wave, &onTimerWave, true);
     timerAlarmWrite(timer_wave, TIME_WAVE, true);
     timerAlarmEnable(timer_wave);
 }
 
-void WaveformDrawer::DCRemoval(double *vData, uint16_t samples) {
+void WaveformDrawer::restartTimer() {
+    memset(adc_buf, 0, sizeof(adc_buf));
+    timerRestart(timer_wave);
+    timerStart(timer_wave);
+}
+
+void WaveformDrawer::DCRemoval(double *vData, unsigned int samples) {
     double mean = 0;
-    for (uint16_t i = 1; i < samples; i++) {
+    for (uint16_t i = 0; i < samples; i++) {
         mean += vData[i];
     }
     mean /= samples;
-    for (uint16_t i = 1; i < samples; i++) {
+    for (uint16_t i = 0; i < samples; i++) {
         vData[i] -= mean;
     }
 }
 
 void WaveformDrawer::drawChart(int nsamples) {
+    // グラフ原点や描画可能領域の定義
     int X0 = 30;
     int Y0 = 20;
-    int _height = 240 - Y0;
-    int _width = 320;
-    float dmax = 5.0;
-    int band_width = floor(_width / nsamples);
-    int band_pad = band_width - 1;
+    int _height = 240 - Y0;   // 実際に使える縦サイズ
+    int _width = 320;         // 実際に使える横サイズ
+    float dmax = 5.0;         // グラフ化する際の最大値（振幅）
 
-    for (int band = 0; band < nsamples; band++) {
-        int hpos = band * band_width + X0;
-        float d = vReal[band];
-        if (d > dmax) d = dmax;
-        int h = (int)((d / dmax) * (_height));
-        M5.Lcd.fillRect(hpos, _height - h, band_pad, h, WHITE);
-        if ((band % (nsamples / 4)) == 0) {
-            M5.Lcd.setCursor(hpos, _height + Y0 - 10);
-            M5.Lcd.printf("%.1fHz", ((band * 1.0 * SAMPLING_FREQUENCY) / FFTsamples));
+    //==============================================
+    // 1. スキップ係数を計算: サンプル数が描画幅を超える場合は間引く
+    //   例: nsamples = 500, _width = 320 のとき
+    //       -> skipFactor = ceil(500 / 320) = ceil(1.5625) = 2
+    //       -> 2 サンプルに 1 回描画する
+    //==============================================
+    int skipFactor = 1;
+    if (nsamples > _width) {
+        skipFactor = ceil((float)nsamples / _width);
+    }
+
+    // 実際に描画を行う回数(横方向に何本描画するか)
+    int drawCount = nsamples / skipFactor;
+    if (drawCount < 1) {
+        // 安全策として 1 本だけでも描画させる
+        drawCount = 1;
+    }
+
+    //==============================================
+    // 2. 横幅あたりの描画バンド幅を計算し、0 にならないようにする
+    //==============================================
+    int band_width = floor((float)_width / drawCount);
+    if (band_width < 1) {
+        band_width = 1;  // 幅が 0 にならないように最低 1 を確保
+    }
+
+    // fillRect に与えるパッド幅(余白)を計算
+    int band_pad = band_width - 1;
+    if (band_pad < 1) {
+        band_pad = 1;  // 負数にならないように最低 1 を確保
+    }
+
+    //==============================================
+    // 3. グラフを描画するループ (スキップ分を加味)
+    //==============================================
+    for (int i = 0; i < nsamples; i += skipFactor) {
+        // band (描画バンドのインデックス) は i / skipFactor で計算
+        int band = i / skipFactor;
+        int hpos = band * band_width + X0;  // 横方向の描画位置
+
+        // 実際のサンプル値
+        float d = vReal[i];
+        if (d > dmax) d = dmax;  // オーバー分はクリップ
+        if (d < 0.0)  d = 0.0;   // 負値が来る場合はとりあえず 0 にクリップ
+
+        // 高さを計算 (d/dmax) を描画可能領域にスケーリング
+        int h = (int)((d / dmax) * _height);
+
+        // fillRect で縦バー描画
+        //  (注) y 座標は上から下へ増える前提なので、塗りつぶしは
+        //       下から上へ行うように座標を調整
+        M5.Lcd.fillRect(hpos, (_height - h), band_pad, h, WHITE);
+
+        //==============================================
+        // 4. ラベル(周波数表示など)を描画 (任意)
+        //    こちらもサンプル数が大きいと文字が重なるため
+        //    ある程度の区切りで表示するようにする
+        //==============================================
+        if (drawCount >= 4) {
+            // drawCount(実際に描画する本数)の1/4おきにラベルを描画
+            int label_interval = drawCount / 4;
+            if (label_interval <= 0) {
+                label_interval = 1;
+            }
+            if ( (band % label_interval) == 0 ) {
+                M5.Lcd.setCursor(hpos, _height + Y0 - 10);
+                M5.Lcd.printf("%.1fHz",
+                    ((i * 1.0 * SAMPLING_FREQUENCY) / FFTsamples)
+                );
+            }
         }
     }
 }
+
 
 void WaveformDrawer::doFFT() {
     // adc_bufをvRealに代入（ADCデータのコピー）
@@ -153,6 +226,14 @@ void WaveformDrawer::doFFT() {
     for (int i = 0; i < FFTsamples; i++) {
         vReal[i] = vReal[i] / (FFTsamples / 2);  // 最大値をサンプル数で割る
     }
+    Serial.println("vReal contents:");
+    for (int i = 0; i < GRAPH_MAX_LEN; i++) {
+        Serial.print(vReal[i]);
+        if (i < GRAPH_MAX_LEN - 1) {
+            Serial.print(", ");
+        }
+    }
+    Serial.println();
     drawChart(FFTsamples / 2);
 }
 
@@ -160,8 +241,10 @@ void WaveformDrawer::startFFT() {
     timerStop(timer_wave);
     M5.Lcd.fillScreen(BLACK);
     doFFT();
+    freeBuffer();
+    initWaveformDrawer();
+    restartTimer();
 }
-
 
 void WaveformDrawer::drawStringWithFormat(const char* label, int value, int x, int y) {
     char buffer[32];
@@ -173,6 +256,8 @@ void WaveformDrawer::drawWaveform() {
     static unsigned long lastTime = 0;
     unsigned long currentTime = micros();
     unsigned long elapsedTime = currentTime - lastTime;
+
+    #if 0
 
     drawStringWithFormat("Time", elapsedTime, 0, 0);
     lastTime = currentTime;
@@ -216,10 +301,15 @@ void WaveformDrawer::drawWaveform() {
     drawStringWithFormat("dBValue", (int)dBValue, 0, 40);
     M5.Lcd.setTextSize(1);
 
+    #endif
+    static int16_t pt = GRAPH_MAX_LEN - 1;
+    adc_buf[pt] = micWave;
+
     if (--pt < 0) {
         pt = GRAPH_MAX_LEN - 1;
     }
 
+    #if 0
     static int countGraphX;
     for (int i = 1; i < (GRAPH_MAX_LEN); i++) {
         uint16_t now_pt = (pt + i) % (GRAPH_MAX_LEN);
@@ -230,4 +320,5 @@ void WaveformDrawer::drawWaveform() {
             M5.Lcd.drawLine(i + X_OFFSET, integ_buf[now_pt] + Y_OFFSET, i + 1 + X_OFFSET, integ_buf[(now_pt + 1) % GRAPH_MAX_LEN] + Y_OFFSET, TFT_BLUE);
         }
     }
+    #endif
 }

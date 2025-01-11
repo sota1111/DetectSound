@@ -20,6 +20,8 @@ void showMenu() {
 
 void setup() {
     M5.begin();
+    //Serial.begin(115200);
+    //Serial.println("=== M5Stack Booting ===");
     showMenu();
 }
 
