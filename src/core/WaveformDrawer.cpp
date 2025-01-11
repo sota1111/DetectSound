@@ -1,6 +1,7 @@
 #include "WaveformDrawer.h"
 #include <M5Stack.h>
 #include "Free_Fonts.h" 
+#include "arduinoFFT.h"
 
 WaveformDrawer waveformDrawer;
 
