@@ -57,6 +57,21 @@ void WaveformDrawer::initWaveformDrawer() {
     }
 }
 
+// 1秒間のAD変換値の平均を取得する関数
+void WaveformDrawer::getADCAverage() {
+    const unsigned long duration = 1000; // 1秒間 (ミリ秒単位)
+    unsigned long startTime = millis();
+    long sum = 0;
+    int count = 0;
+
+    while (millis() - startTime < duration) {
+        int adcValue = analogRead(36);
+        sum += adcValue;
+        count++;
+    }
+    adcAverage = (float)sum / count;
+}
+
 void IRAM_ATTR onTimerWave() {
     micWave = analogRead(36);
     waveformDrawer.drawWaveform();
