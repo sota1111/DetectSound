@@ -30,6 +30,14 @@ void WaveformDrawer::freeBuffer() {
         delete[] integ_buf;
         integ_buf = nullptr;
     }
+    if (vReal) {
+        delete[] vReal;
+        vReal = nullptr;
+    }
+    if (vImag) {
+        delete[] vImag;
+        vImag = nullptr;
+    }
     M5.Lcd.println("Buffer freed");
 }
 
@@ -50,10 +58,24 @@ void WaveformDrawer::initWaveformDrawer() {
         M5.Lcd.println("Failed to allocate buffer");
         return;
     }
+    vReal = new double[FFTsamples];
+    if (vReal == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
+    vImag = new double[FFTsamples];
+    if (vImag == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
     for (int i = 0; i < GRAPH_MAX_LEN; i++) {
         adc_buf[i] = 0;
         val_buf[i] = 0;
         integ_buf[i] = 0;
+    }
+    for (int i = 0; i < FFTsamples; i++) {
+        vReal[i] = 0;
+        vImag[i] = 0;
     }
 }
 
@@ -83,6 +105,63 @@ void WaveformDrawer::startTimer() {
     timerAlarmWrite(timer_wave, TIME_WAVE, true);
     timerAlarmEnable(timer_wave);
 }
+
+void WaveformDrawer::DCRemoval(double *vData, uint16_t samples) {
+    double mean = 0;
+    for (uint16_t i = 1; i < samples; i++) {
+        mean += vData[i];
+    }
+    mean /= samples;
+    for (uint16_t i = 1; i < samples; i++) {
+        vData[i] -= mean;
+    }
+}
+
+void WaveformDrawer::drawChart(int nsamples) {
+    int X0 = 30;
+    int Y0 = 20;
+    int _height = 240 - Y0;
+    int _width = 320;
+    float dmax = 5.0;
+    int band_width = floor(_width / nsamples);
+    int band_pad = band_width - 1;
+
+    for (int band = 0; band < nsamples; band++) {
+        int hpos = band * band_width + X0;
+        float d = vReal[band];
+        if (d > dmax) d = dmax;
+        int h = (int)((d / dmax) * (_height));
+        M5.Lcd.fillRect(hpos, _height - h, band_pad, h, WHITE);
+        if ((band % (nsamples / 4)) == 0) {
+            M5.Lcd.setCursor(hpos, _height + Y0 - 10);
+            M5.Lcd.printf("%.1fHz", ((band * 1.0 * SAMPLING_FREQUENCY) / FFTsamples));
+        }
+    }
+}
+
+void WaveformDrawer::doFFT() {
+    // adc_bufをvRealに代入（ADCデータのコピー）
+    for (int i = 0; i < FFTsamples; i++) {
+        vReal[i] = static_cast<double>(adc_buf[i]);
+    }
+    DCRemoval(vReal, FFTsamples);
+    // FFT処理
+    ArduinoFFT<double> FFT = ArduinoFFT<double>();
+    FFT.windowing(vReal, FFTsamples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  // ハミング窓
+    FFT.compute(vReal, vImag, FFTsamples, FFT_FORWARD);  // FFT計算
+    FFT.complexToMagnitude(vReal, vImag, FFTsamples);  // 実数信号の絶対値計算
+    for (int i = 0; i < FFTsamples; i++) {
+        vReal[i] = vReal[i] / (FFTsamples / 2);  // 最大値をサンプル数で割る
+    }
+    drawChart(FFTsamples / 2);
+}
+
+void WaveformDrawer::startFFT() {
+    timerStop(timer_wave);
+    M5.Lcd.fillScreen(BLACK);
+    doFFT();
+}
+
 
 void WaveformDrawer::drawStringWithFormat(const char* label, int value, int x, int y) {
     char buffer[32];
@@ -133,8 +212,9 @@ void WaveformDrawer::drawWaveform() {
         // y = 60 + 0.05 * (x - 100)
         dBValue = 60 + (avgIntegral - 100)/20;
     }
-    
+    M5.Lcd.setTextSize(3);
     drawStringWithFormat("dBValue", (int)dBValue, 0, 40);
+    M5.Lcd.setTextSize(1);
 
     if (--pt < 0) {
         pt = GRAPH_MAX_LEN - 1;

@@ -24,7 +24,6 @@ void setup() {
 }
 
 void loop() {
-
     if (currentMode == NONE) {
         M5.update();
         if (M5.BtnA.wasPressed()) {  // 左ボタン
@@ -49,6 +48,10 @@ void loop() {
         if (currentMode == NOISE_DETECTOR) {
             noiseDetector.storeNoise();
         } else if (currentMode == WAVEFORM_DRAWER) {
+            M5.update();
+            if (M5.BtnB.wasPressed()) {
+                waveformDrawer.startFFT();
+            }
         }
     }
 }
