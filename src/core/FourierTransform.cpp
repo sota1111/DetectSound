@@ -186,14 +186,11 @@ void FourierTransform::doFFT() {
     for (int i = 0; i < FFT_SAMPLES; i++) {
         vReal[i] = vReal[i] / (FFT_SAMPLES / 2);  // 最大値をサンプル数で割る
     }
-    Serial.println("vReal contents:");
-    for (int i = 0; i < FFT_SAMPLES; i++) {
-        Serial.print(vReal[i]);
-        if (i < FFT_SAMPLES - 1) {
-            Serial.print(", ");
-        }
-    }
     drawChart(FFT_SAMPLES / 2);
+    // FFTでピークの周波数を表示
+    double peak = FFT.majorPeak(vReal, FFT_SAMPLES, SAMPLING_FREQUENCY);
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.printf("Peak: %.1fHz\n", peak);
 }
 
 void FourierTransform::startFFT() {
