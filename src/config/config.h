@@ -29,9 +29,12 @@
 #define INTEGRAL_SAMPLES_DETECT (TIME_INTEGRAL_DETECT / TIME_IRQ)
 
 // グラフ描画
-#define TIME_WAVE (200) //us
-#define TIME_INTEGRAL (200) //us
+#define TIME_WAVE (30*1000) //us
+#define TIME_INTEGRAL (300*1000) //us
 #define INTEGRAL_SAMPLES (TIME_INTEGRAL / TIME_WAVE)
+
+// グラフ描画
+#define TIME_FFT (200) //us
 
 // デバイス管理
 #define TIMEOUT_WIFI_CONNECT (30000)

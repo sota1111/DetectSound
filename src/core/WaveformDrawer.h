@@ -4,9 +4,7 @@
 #include <M5Stack.h>
 #include "../config/config.h"
 
-#define GRAPH_MAX_LEN (4096)
-#define FFTsamples GRAPH_MAX_LEN // 2のべき乗
-#define SAMPLING_FREQUENCY (1/(TIME_WAVE*1e-6)) 
+#define GRAPH_MAX_LEN 320
 #define X_OFFSET 0
 #define Y_OFFSET 100
 #define X_SCALE 1
@@ -17,13 +15,8 @@ private:
     int16_t* adc_buf=nullptr;
     int16_t* val_buf=nullptr;
     int16_t* integ_buf=nullptr;
-    double* vReal=nullptr;
-    double* vImag=nullptr;
     void drawStringWithFormat(const char* label, int value, int x, int y);
     void freeBuffer();
-    void doFFT();
-    void DCRemoval(double *vData, unsigned int samples);
-    void drawChart(int samples);
 
 public:
     WaveformDrawer();
@@ -33,7 +26,6 @@ public:
     void restartTimer();
     void drawWaveform();
     void initWaveformDrawer();
-    void startFFT();
 };
 
 extern WaveformDrawer waveformDrawer;
