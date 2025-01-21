@@ -15,6 +15,8 @@ private:
     unsigned int write_index;
     unsigned int detect_index;
     int16_t* val_buf=nullptr;
+    double* vReal=nullptr;
+    double* vImag=nullptr;
     // 騒音検出
     unsigned long noiseEventTimes_A[MAX_NOISE_EVENTS];
     unsigned long noiseEventTimes_B[MAX_NOISE_EVENTS];
@@ -30,6 +32,8 @@ private:
     void notificationAWS();
     void postCSVtoServer(const char* fileName);
     void freeBuffer();
+    void DCRemoval(double *vData, unsigned int samples);
+    double doFFT(int detect_count);
 
 public:
     NoiseDetector();

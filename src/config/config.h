@@ -28,12 +28,19 @@
 // RECORD_MAX_LENを超えない値にする
 #define INTEGRAL_SAMPLES_DETECT (TIME_INTEGRAL_DETECT / TIME_IRQ)
 
+#define FFT_SAMPLES_APROP (2048) // 2のべき乗 これ以上大きいとリセットする
+#define SAMPLING_FREQUENCY_APROP (1/(TIME_IRQ*1e-6)) 
+
+
+
+
+
 // グラフ描画
 #define TIME_WAVE (30*1000) //us
 #define TIME_INTEGRAL (300*1000) //us
 #define INTEGRAL_SAMPLES (TIME_INTEGRAL / TIME_WAVE)
 
-// グラフ描画
+// FFT
 #define TIME_FFT (200) //us
 
 // デバイス管理

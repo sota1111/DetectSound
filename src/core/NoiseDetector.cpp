@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include "arduinoFFT.h"
 #include "NoiseDetector.h"
 #include "DeviceHandler/WiFiHandler.h"
 #include "DeviceHandler/SDCardHandler.h"
@@ -17,6 +18,8 @@ volatile int16_t adcAverageDetect = 0;
 // 初期化
 NoiseDetector::NoiseDetector() {
     val_buf = nullptr;
+    vReal = nullptr;
+    vImag = nullptr;
     isRequestSpeaker = false;
     isDataStored = false;
     isTimerStopped = false;
@@ -38,7 +41,14 @@ void NoiseDetector::freeBuffer() {
     if (val_buf) {
         delete[] val_buf;
         val_buf = nullptr;
-        M5.Lcd.println("Buffer freed");
+    }
+    if (vReal) {
+        delete[] vReal;
+        vReal = nullptr;
+    }
+    if (vImag) {
+        delete[] vImag;
+        vImag = nullptr;
     }
 }
 
@@ -61,6 +71,10 @@ void NoiseDetector::initBuf() {
     for (int i = 0; i < RECORD_MAX_LEN; i++) {
         val_buf[i] = 0;
     }
+    for (int i = 0; i < FFT_SAMPLES_APROP; i++) {
+        vReal[i] = 0.0;
+        vImag[i] = 0.0;
+    }
     for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
         noiseEventTimes_A[i] = 0;
         noiseEventTimes_B[i] = 0;
@@ -73,6 +87,16 @@ void NoiseDetector::initNoiseDetector() {
     freeBuffer();  // 以前のバッファがあれば解放
     val_buf = new int16_t[RECORD_MAX_LEN];  // バッファを動的に確保
     if (val_buf == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
+    vReal = new double[FFT_SAMPLES_APROP];
+    if (vReal == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
+    vImag = new double[FFT_SAMPLES_APROP];
+    if (vImag == nullptr) {
         M5.Lcd.println("Failed to allocate buffer");
         return;
     }
@@ -198,6 +222,45 @@ int NoiseDetector::calculateMovingIntegral(int currentMicValue, int writeIndex)
     return avgIntegral;
 }
 
+void NoiseDetector::DCRemoval(double *vData, unsigned int samples) {
+    double mean = 0;
+    for (uint16_t i = 0; i < samples; i++) {
+        mean += vData[i];
+    }
+    mean /= samples;
+    for (uint16_t i = 0; i < samples; i++) {
+        vData[i] -= mean;
+    }
+}
+
+double NoiseDetector::doFFT(int detect_count) {
+    for (int i = 0; i < FFT_SAMPLES_APROP; i++) {   
+        int j = i + detect_count - FFT_SAMPLES_APROP;
+        if (j < 0) {
+            vReal[i] = static_cast<double>(val_buf[(j + RECORD_MAX_LEN ) % RECORD_MAX_LEN]);
+        } else {
+            vReal[i] = static_cast<double>(val_buf[j % RECORD_MAX_LEN]);
+        }
+    }
+    DCRemoval(vReal, FFT_SAMPLES_APROP);
+    // FFT処理
+    ArduinoFFT<double> FFT = ArduinoFFT<double>();
+    FFT.windowing(vReal, FFT_SAMPLES_APROP, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  // ハミング窓
+    FFT.compute(vReal, vImag, FFT_SAMPLES_APROP, FFT_FORWARD);  // FFT計算
+    FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES_APROP);  // 実数信号の絶対値計算
+    // ピーク周波数を計算
+    double maxValue = 0.0;
+    int peakIndex = 0;
+    for (int i = 1; i < FFT_SAMPLES_APROP / 2; i++) { // Nyquist周波数まで
+        if (vReal[i] > maxValue) {
+            maxValue = vReal[i];
+            peakIndex = i;
+        }
+    }
+    double peak = peakIndex * SAMPLING_FREQUENCY_APROP / FFT_SAMPLES_APROP;
+    return peak;
+}
+
 // ============================================================
 //  updateBuffer から移動積分の計算処理を関数呼び出しに置き換え
 // ============================================================
@@ -230,6 +293,8 @@ void NoiseDetector::updateBuffer(int micValue) {
             isDataStored = true;
             isNoiseDetected = false;
             isRequestSpeaker = true;
+            double peak_freq = doFFT(detect_count);
+            M5.Lcd.printf("Peak: %.1fHz\n", peak_freq);
             detect_count = 0;
             M5.Lcd.println("BUFFER FULL");
             M5.Lcd.println("STOP TIMER");
