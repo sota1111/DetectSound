@@ -12,6 +12,8 @@ private:
     bool isRequestSpeaker;
     bool isDataStored;
     bool isTimerStopped;
+    int dBValue_A;
+    int dBValue_B;
     unsigned int write_index;
     unsigned int detect_index;
     int16_t* val_buf=nullptr;

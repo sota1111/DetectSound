@@ -181,6 +181,7 @@ bool NoiseDetector::detectNoise_A(int avgIntegral) {
             }
         }
         if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD_A) {
+            dBValue_A = dBValue;
             return true;
         }
     }
@@ -215,6 +216,7 @@ bool NoiseDetector::detectNoise_B(int avgIntegral) {
             }
         }
         if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD_B) {
+            dBValue_B = dBValue;
             return true;
         }
     }
@@ -318,6 +320,7 @@ void NoiseDetector::updateBuffer(int micValue) {
     static unsigned int detect_count = 0;
     static bool isNoiseDetected      = false;
     static unsigned int startTime    = 0;
+    static char noiseSource;
 
     if (!isDataStored) {
         // ノイズ検出前後のデータを記録        
@@ -328,7 +331,15 @@ void NoiseDetector::updateBuffer(int micValue) {
         int avgIntegral = calculateMovingIntegral(micValue, write_index);
 
         // ノイズ検出
-        if ( (detectNoise_A(avgIntegral) || detectNoise_B(avgIntegral)) && (isNoiseDetected == false) ) {
+        bool isDetectNoise_A = (detectNoise_A(avgIntegral));
+        bool isDetectNoise_B = (detectNoise_B(avgIntegral));
+
+        if ( ( isDetectNoise_A || isDetectNoise_B) && (isNoiseDetected == false) ) {
+            if (isDetectNoise_A) {
+                noiseSource = 'A';
+            } else if (isDetectNoise_B) {
+                noiseSource = 'B';
+            }
             isNoiseDetected = true;
             detect_index = write_index;
             M5.Lcd.println("NOISE DETECTED");
@@ -340,11 +351,14 @@ void NoiseDetector::updateBuffer(int micValue) {
         // ノイズ検出後、データを貯め続ける。
         if(detect_count > RECORD_AFTER_LEN){
             timerStop(timer);
-            isDataStored = true;
-            isNoiseDetected = false;
-
+            int dBValue = 0;
+            if (noiseSource == 'A') {
+                dBValue = dBValue_A;
+            } else if (noiseSource == 'B') {
+                dBValue = dBValue_B;
+            }
+            
             // A特性補正を行う
-            int dBValue = calculateDbValue(avgIntegral);
             M5.Lcd.printf("dB: %d\n", dBValue);
             double peak_freq = doFFT(detect_count);
             M5.Lcd.printf("Peak: %.1fHz\n", peak_freq);
@@ -352,11 +366,17 @@ void NoiseDetector::updateBuffer(int micValue) {
             M5.Lcd.printf("dB_Aprop: %d\n", dB_Aprop);
             if (dB_Aprop >= NOISE_THRESHOLD_DB_APROP) {
                 isRequestSpeaker = true;
-                
             }
             int stopTime = millis() - startTime;
             M5.Lcd.printf("Time: %d\n", stopTime);
-            detect_count = 0; 
+
+            write_index = 0;
+            detect_index = 0;
+            dBValue_A = 0;
+            dBValue_B = 0;
+            detect_count = 0;
+            isDataStored = true;
+            isNoiseDetected = false;
         }
     }
 }
@@ -367,7 +387,6 @@ void NoiseDetector::logNoiseTimestamp() {
     // detect_index+RECORD_AFTER_LENがcsvDataの先頭になるようにする
     int startIndex = detect_index + RECORD_AFTER_LEN + 1;
     int endIndex = startIndex + RECORD_MAX_LEN;
-    detect_index = 0;
 
     for (int i = startIndex; i < endIndex; i++) {
         csvData += String(val_buf[i % RECORD_MAX_LEN]) + ",";
