@@ -15,6 +15,26 @@ volatile int micValue = 0;
 hw_timer_t *timer = NULL;
 volatile int16_t adcAverageDetect = 0;
 
+// A特性補正用の表
+struct AWeightTable {
+    double frequency;
+    double response;
+};
+
+const AWeightTable aWeightTable[] = {
+    {16, -55},
+    {32, -40},
+    {63, -25},
+    {125, -16},
+    {250, -8},
+    {500, -4},
+    {1000, 0},
+    {2000, 2},
+    {4000, 0},
+    {8000, -2},
+    {16000, -6},
+};
+
 // 初期化
 NoiseDetector::NoiseDetector() {
     val_buf = nullptr;
@@ -261,6 +281,36 @@ double NoiseDetector::doFFT(int detect_count) {
     return peak;
 }
 
+// 線形補間を用いて相対レスポンスを計算する関数
+double interpolateAWeight(double freq) {
+    int size = sizeof(aWeightTable) / sizeof(AWeightTable);
+
+    // 範囲外チェック
+    if (freq <= aWeightTable[0].frequency) {
+        return aWeightTable[0].response;
+    }
+    if (freq >= aWeightTable[size - 1].frequency) {
+        return aWeightTable[size - 1].response;
+    }
+
+    // 表を参照して線形補間
+    for (int i = 0; i < size - 1; i++) {
+        if (freq >= aWeightTable[i].frequency && freq <= aWeightTable[i + 1].frequency) {
+            double f1 = aWeightTable[i].frequency;
+            double f2 = aWeightTable[i + 1].frequency;
+            double r1 = aWeightTable[i].response;
+            double r2 = aWeightTable[i + 1].response;
+            return r1 + (r2 - r1) * (freq - f1) / (f2 - f1);
+        }
+    }
+    return 0; // ここには到達しない
+}
+
+int calc_Aprop(double peak_freq, int dB_base) {
+    double aResponse = interpolateAWeight(peak_freq);
+    return dB_base + aResponse;
+}
+
 // ============================================================
 //  updateBuffer から移動積分の計算処理を関数呼び出しに置き換え
 // ============================================================
@@ -292,14 +342,21 @@ void NoiseDetector::updateBuffer(int micValue) {
             timerStop(timer);
             isDataStored = true;
             isNoiseDetected = false;
-            isRequestSpeaker = true;
+
+            // A特性補正を行う
+            int dBValue = calculateDbValue(avgIntegral);
+            M5.Lcd.printf("dB: %d\n", dBValue);
             double peak_freq = doFFT(detect_count);
             M5.Lcd.printf("Peak: %.1fHz\n", peak_freq);
-            detect_count = 0;
-            M5.Lcd.println("BUFFER FULL");
-            M5.Lcd.println("STOP TIMER");
+            int dB_Aprop = calc_Aprop(peak_freq, dBValue);
+            M5.Lcd.printf("dB_Aprop: %d\n", dB_Aprop);
+            if (dB_Aprop >= NOISE_THRESHOLD_DB_APROP) {
+                isRequestSpeaker = true;
+                
+            }
             int stopTime = millis() - startTime;
-            M5.Lcd.printf("Time: %d\n", stopTime);     
+            M5.Lcd.printf("Time: %d\n", stopTime);
+            detect_count = 0; 
         }
     }
 }
