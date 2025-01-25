@@ -94,6 +94,8 @@ void WaveformDrawer::restartTimer() {
 
 
 void WaveformDrawer::drawStringWithFormat(const char* label, int value, int x, int y) {
+    int labelWidth = strlen(label) * 6;  // 6はフォントの幅の概算
+    M5.Lcd.fillRect(x + labelWidth, y, 100, 8, TFT_BLACK); 
     char buffer[32];
     sprintf(buffer, "%s: %8d", label, value);
     M5.Lcd.drawString(buffer, x, y);

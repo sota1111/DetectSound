@@ -5,56 +5,89 @@
 #include "config/secret.h"
 
 // 現在のモードを記憶する変数
-enum Mode { NONE, NOISE_DETECTOR, FOUNRIER_TRANSFORM ,WAVEFORM_DRAWER };
+enum Mode { NONE, NOISE_DETECTOR, FOUNRIER_TRANSFORM, WAVEFORM_DRAWER, ANNOTATION };
 Mode currentMode = NONE;
+
+// メニュー選択用の変数
+int selectedItem = 0;
+const int NUM_MENU_ITEMS = 4;
+const char* menuItems[] = {"Noise Detect", "FFT", "Wave Drawer", "Annotation"};
+const int MENU_START_Y = 30;  // メニューの開始Y座標
+const int MENU_ITEM_HEIGHT = 30;  // メニュー項目の高さ
 
 void showMenu() {
     M5.Lcd.clear();
     M5.Lcd.setTextSize(2);
-    M5.Lcd.printf("Press Button");
-    M5.Lcd.drawString("Noise", 35, 200);
-    M5.Lcd.drawString("Detect", 35, 220);
-    M5.Lcd.drawString("FFT", 145, 220);
-    M5.Lcd.drawString("Wave", 230, 200);
-    M5.Lcd.drawString("Drawer", 230, 220);
-    M5.Lcd.setTextSize(1);
+    
+    // タイトルを表示
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.printf("Select Mode");
+
+    // メニュー項目の表示（固定位置）
+    for(int i = 0; i < NUM_MENU_ITEMS; i++) {
+        M5.Lcd.setCursor(20, MENU_START_Y + (i * MENU_ITEM_HEIGHT));
+        if(i == selectedItem) {
+            M5.Lcd.setTextColor(TFT_BLUE);
+        } else {
+            M5.Lcd.setTextColor(TFT_WHITE);
+        }
+        M5.Lcd.printf("%s", menuItems[i]);
+    }
+    
+    // 操作説明の表示（固定位置）
+    M5.Lcd.setTextColor(TFT_WHITE);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.drawString("Down", 35, 220);
+    M5.Lcd.drawString("Select", 135, 220);
+    M5.Lcd.drawString("Up", 250, 220);
 }
 
 void setup() {
     M5.begin();
-    //Serial.begin(115200);
-    //Serial.println("=== M5Stack Booting ===");
     showMenu();
 }
 
 void loop() {
     if (currentMode == NONE) {
         M5.update();
-        if (M5.BtnA.wasPressed()) {  // 左ボタン
+        if (M5.BtnA.wasPressed()) {  // 左ボタン - 下移動
+            selectedItem = (selectedItem + 1) % NUM_MENU_ITEMS;
+            showMenu();
+        } else if (M5.BtnC.wasPressed()) {  // 右ボタン - 上移動
+            selectedItem = (selectedItem - 1 + NUM_MENU_ITEMS) % NUM_MENU_ITEMS;
+            showMenu();
+        } else if (M5.BtnB.wasPressed()) {  // 中央ボタン - 選択
             M5.Lcd.clear();
-            M5.Lcd.setCursor(0, 0);
-            M5.Lcd.printf("Starting Noise Detector...\n");
-            noiseDetector.initNoiseDetector();
-            noiseDetector.getADCAverage();
-            noiseDetector.startTimer();
-            currentMode = NOISE_DETECTOR;
-        } else if (M5.BtnB.wasPressed()) {  // 中央ボタン
-            fourierTransform.initFourierTransform();
-            fourierTransform.startTimer();
-            M5.Lcd.clear();
-            M5.Lcd.setTextSize(2);
-            M5.Lcd.drawString("START FFT", 115, 220);
-            M5.Lcd.setTextSize(1);
-            currentMode = FOUNRIER_TRANSFORM;
-        } else if (M5.BtnC.wasPressed()) {  // 右ボタン
-            M5.Lcd.clear();
-            M5.Lcd.setCursor(0, 0);
-            M5.Lcd.printf("Starting Waveform Drawer...\n");
-            waveformDrawer.initWaveformDrawer();
-            waveformDrawer.getADCAverage();
-            waveformDrawer.startTimer();
-            M5.Lcd.clear();
-            currentMode = WAVEFORM_DRAWER;
+            switch(selectedItem) {
+                case 0: // Noise Detector
+                    M5.Lcd.setCursor(0, 0);
+                    M5.Lcd.setTextSize(1);
+                    M5.Lcd.printf("Starting Noise Detector...\n");
+                    noiseDetector.initNoiseDetector();
+                    noiseDetector.getADCAverage();
+                    noiseDetector.startTimer();
+                    currentMode = NOISE_DETECTOR;
+                    break;
+                case 1: // FFT
+                    fourierTransform.initFourierTransform();
+                    fourierTransform.startTimer();
+                    M5.Lcd.setTextSize(2);
+                    M5.Lcd.drawString("START FFT", 115, 220);
+                    M5.Lcd.setTextSize(1);
+                    currentMode = FOUNRIER_TRANSFORM;
+                    break;
+                case 2: // Waveform Drawer
+                    M5.Lcd.clear();
+                    M5.Lcd.setCursor(0, 0);
+                    M5.Lcd.setTextSize(1);
+                    M5.Lcd.printf("Starting Waveform Drawer...\n");
+                    waveformDrawer.initWaveformDrawer();
+                    waveformDrawer.getADCAverage();
+                    waveformDrawer.startTimer();
+                    M5.Lcd.clear();
+                    currentMode = WAVEFORM_DRAWER;
+                    break;
+            }
         }
     } else {
         if (currentMode == NOISE_DETECTOR) {
