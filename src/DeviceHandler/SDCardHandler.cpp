@@ -1,4 +1,5 @@
 #include "SDCardHandler.h"
+SDCardHandler sdcardHandler;
 
 void SDCardHandler::initSDCard(const char* apartmentName, const char* roomName) {
     if (!SD.begin(TFCARD_CS_PIN, SPI, 40000000)) {

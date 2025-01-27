@@ -1,19 +1,11 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "arduinoFFT.h"
+#include "common.h"
 #include "NoiseDetector.h"
-#include "DeviceHandler/WiFiHandler.h"
-#include "DeviceHandler/SDCardHandler.h"
-#include "DeviceHandler/SpeakerHandler.h"
 
-SDCardHandler sdcardHandler;
-SpeakerHandler speakerHandler;
 NoiseDetector noiseDetector;
-WiFiHandler wifiHandler;
-
-volatile int micValue = 0;
 hw_timer_t *timer = NULL;
-volatile int16_t adcAverageDetect = 0;
 
 // A特性補正用の表
 struct AWeightTable {
@@ -37,6 +29,7 @@ const AWeightTable aWeightTable[] = {
 
 // 初期化
 NoiseDetector::NoiseDetector() {
+    noiseDetector.micValue = 0;
     val_buf = nullptr;
     vReal = nullptr;
     vImag = nullptr;
@@ -47,6 +40,7 @@ NoiseDetector::NoiseDetector() {
     detect_index = 0;
     integralValue = 0;
     sampleIntegralCount = 0;
+    adcAverageDetect = 0;
     for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
         noiseEventTimes_A[i] = 0;
         noiseEventTimes_B[i] = 0;
@@ -497,8 +491,8 @@ void NoiseDetector::storeNoise() {
 }
 
 void IRAM_ATTR onTimer() {
-    micValue = analogRead(36);
-    noiseDetector.updateBuffer(micValue);
+    noiseDetector.micValue = analogRead(36);
+    noiseDetector.updateBuffer(noiseDetector.micValue);
 }
 
 void NoiseDetector::startTimer() {

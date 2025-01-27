@@ -2,6 +2,7 @@
 #include "core/NoiseDetector.h"
 #include "core/WaveformDrawer.h"
 #include "core/FourierTransform.h"
+#include "core/AnnotationData.h"
 #include "config/secret.h"
 
 // 現在のモードを記憶する変数
@@ -63,29 +64,38 @@ void loop() {
                     M5.Lcd.setCursor(0, 0);
                     M5.Lcd.setTextSize(1);
                     M5.Lcd.printf("Starting Noise Detector...\n");
+                    currentMode = NOISE_DETECTOR;
                     noiseDetector.initNoiseDetector();
                     noiseDetector.getADCAverage();
                     noiseDetector.startTimer();
-                    currentMode = NOISE_DETECTOR;
                     break;
                 case 1: // FFT
-                    fourierTransform.initFourierTransform();
-                    fourierTransform.startTimer();
+                    currentMode = FOUNRIER_TRANSFORM;
                     M5.Lcd.setTextSize(2);
                     M5.Lcd.drawString("START FFT", 115, 220);
                     M5.Lcd.setTextSize(1);
-                    currentMode = FOUNRIER_TRANSFORM;
+                    fourierTransform.initFourierTransform();
+                    fourierTransform.startTimer();
                     break;
                 case 2: // Waveform Drawer
                     M5.Lcd.clear();
                     M5.Lcd.setCursor(0, 0);
                     M5.Lcd.setTextSize(1);
                     M5.Lcd.printf("Starting Waveform Drawer...\n");
+                    currentMode = WAVEFORM_DRAWER;
                     waveformDrawer.initWaveformDrawer();
                     waveformDrawer.getADCAverage();
                     waveformDrawer.startTimer();
+                    break;
+                case 3: // Annotation
                     M5.Lcd.clear();
-                    currentMode = WAVEFORM_DRAWER;
+                    M5.Lcd.setCursor(0, 0);
+                    M5.Lcd.setTextSize(1);
+                    M5.Lcd.printf("Starting Annotation...\n");
+                    currentMode = ANNOTATION;
+                    annotationData.initAnnotationData();
+                    annotationData.getADCAverage();
+                    annotationData.startTimer();
                     break;
             }
         }
@@ -98,6 +108,8 @@ void loop() {
                 fourierTransform.startFFT();
             }
         } else if (currentMode == WAVEFORM_DRAWER) {
+        } else if (currentMode == ANNOTATION) {
+            annotationData.storeNoise();
         }
     }
 }

@@ -1,4 +1,5 @@
 #include "WiFiHandler.h"
+WiFiHandler wifiHandler;
 
 void WiFiHandler::connectWiFi(const char* ssid, const char* password) {
     M5.Lcd.printf("Connecting to %s\n", ssid);

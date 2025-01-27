@@ -24,6 +24,7 @@ private:
     unsigned long noiseEventTimes_B[MAX_NOISE_EVENTS];
     long integralValue;
     int  sampleIntegralCount;
+    int16_t adcAverageDetect;
 
     void initBuf();
     bool detectNoise_A(int avgIntegral);
@@ -40,6 +41,7 @@ private:
 public:
     NoiseDetector();
     ~NoiseDetector();
+    int micValue;
     void initNoiseDetector();
     void getADCAverage();
     void updateBuffer(int micValue);
