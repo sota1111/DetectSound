@@ -2,8 +2,8 @@
 #define FOURIERTRANSFORM_H
 
 #include <M5Stack.h>
-#include "../config/config.h"
 
+#define TIME_FFT (200) //us
 #define FFT_SAMPLES (4096) // 2のべき乗
 #define SAMPLING_FREQUENCY (1/(TIME_FFT*1e-6)) 
 #define X_OFFSET 0

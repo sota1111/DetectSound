@@ -32,18 +32,6 @@
 #define FFT_SAMPLES_APROP (2048) // 2のべき乗 これ以上大きいとリセットする
 #define SAMPLING_FREQUENCY_APROP (1/(TIME_IRQ*1e-6)) 
 
-
-
-
-
-// グラフ描画
-#define TIME_WAVE (30*1000) //us
-#define TIME_INTEGRAL (300*1000) //us
-#define INTEGRAL_SAMPLES (TIME_INTEGRAL / TIME_WAVE)
-
-// FFT
-#define TIME_FFT (200) //us
-
 // デバイス管理
 #define TIMEOUT_WIFI_CONNECT (30000)
 #define JST (3600L * 9)

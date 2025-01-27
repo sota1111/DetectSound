@@ -2,8 +2,10 @@
 #define WAVEFORMDRAWER_H
 
 #include <M5Stack.h>
-#include "../config/config.h"
 
+#define TIME_WAVE (30*1000) //us
+#define TIME_INTEGRAL (300*1000) //us
+#define INTEGRAL_SAMPLES (TIME_INTEGRAL / TIME_WAVE)
 #define GRAPH_MAX_LEN 320
 #define X_OFFSET 0
 #define Y_OFFSET 100
