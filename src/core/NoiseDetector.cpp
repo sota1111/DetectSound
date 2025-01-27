@@ -364,8 +364,14 @@ void NoiseDetector::updateBuffer(int micValue) {
             M5.Lcd.printf("Peak: %.1fHz\n", peak_freq);
             int dB_Aprop = calc_Aprop(peak_freq, dBValue);
             M5.Lcd.printf("dB_Aprop: %d\n", dB_Aprop);
-            if (dB_Aprop >= NOISE_THRESHOLD_DB_APROP) {
-                isRequestSpeaker = true;
+            if (noiseSource == 'A') {
+                if (dB_Aprop >= INSTANT_NOISE_THRESHOLD_DB_A) {
+                    isRequestSpeaker = true;
+                }
+            } else if (noiseSource == 'B') {
+                if (dB_Aprop >= INSTANT_NOISE_THRESHOLD_DB_B) {
+                    isRequestSpeaker = true;
+                }
             }
             int stopTime = millis() - startTime;
             M5.Lcd.printf("Time: %d\n", stopTime);

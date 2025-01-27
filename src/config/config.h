@@ -2,7 +2,6 @@
 #define CONFIG_H
 
 // 騒音検出
-#define NOISE_THRESHOLD_DB_APROP  60 // A特性騒音検出の閾値
 #define MAX_NOISE_EVENTS  10  // 騒音イベント記録の最大数
 
 // 基準値A: X_A dB以上の瞬間的な騒音がY_A分間にZ_A回以上観測された場合通知
