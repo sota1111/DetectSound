@@ -260,7 +260,7 @@ void IRAM_ATTR onTimerAnnototion() {
 void AnnotationData::startTimer() {
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
     M5.Lcd.setCursor(0, 0);
-    M5.Lcd.println("NOISE DETECTING");
+    M5.Lcd.println("ANNOTATION MODE");
     timer_annotation = timerBegin(0, 80, true);
     timerAttachInterrupt(timer_annotation, &onTimerAnnototion, true);
     timerAlarmWrite(timer_annotation, TIME_IRQ, true);
