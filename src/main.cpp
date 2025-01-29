@@ -71,11 +71,11 @@ void loop() {
                     break;
                 case 1: // FFT
                     currentMode = FOUNRIER_TRANSFORM;
+                    fourierTransform.initFourierTransform();
+                    fourierTransform.startTimer();
                     M5.Lcd.setTextSize(2);
                     M5.Lcd.drawString("START FFT", 115, 220);
                     M5.Lcd.setTextSize(1);
-                    fourierTransform.initFourierTransform();
-                    fourierTransform.startTimer();
                     break;
                 case 2: // Waveform Drawer
                     M5.Lcd.clear();
