@@ -62,6 +62,11 @@ void AnnotationData::initBuf() {
 
 void AnnotationData::initAnnotationData() {
     freeBuffer();  // 以前のバッファがあれば解放
+    val_buf = new int16_t[RECORD_MAX_LEN];  // バッファを動的に確保
+    if (val_buf == nullptr) {
+        M5.Lcd.println("Failed to allocate buffer");
+        return;
+    }
     initBuf();
     sdcardHandler.initSDCard(APARTMENT_NAME, ROOM_NAME);
     wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
