@@ -93,11 +93,13 @@ void AnnotationData::initAnnotationData() {
 
 // デシベル変換
 int AnnotationData::calculateDbValue(int avgIntegral) {
+    int dBValue = 0;
     if (avgIntegral < 100) {
-        return 40 + (2 * avgIntegral) / 10;
+        dBValue = 40 + (2 * avgIntegral) / 10;
     } else {
-        return 60 + (avgIntegral - 100) / 20;
+        dBValue = 60 + (avgIntegral - 100) / 20;
     }
+    return dBValue;
 }
 
 // 複数回検出
@@ -152,7 +154,7 @@ int AnnotationData::calculateMovingIntegral(int currentMicValue, int writeIndex)
         integralValue    -= abs(val_buf[oldPos] - adcAverageDetect);
     }
 
-    int avgIntegral = integralValue / sampleIntegralCount;
+    int avgIntegral = integralValue / INTEGRAL_SAMPLES_DETECT;
     return avgIntegral;
 }
 
@@ -190,7 +192,6 @@ void AnnotationData::updateBuffer(int micValue) {
             timerStop(timer_annotation);
             int dBValue = dBValue_A;
             
-            // A特性補正を行う
             M5.Lcd.printf("dB: %d\n", dBValue);
             isRequestSpeaker = true;
             int stopTime = millis() - startTime;
