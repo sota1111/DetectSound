@@ -201,6 +201,7 @@ void AnnotationData::updateBuffer(int micValue) {
             detect_index = 0;
             dBValue_A = 0;
             detect_count = 0;
+            avgIntegral = 0;
             isDataStored = true;
             isNoiseDetected = false;
         }

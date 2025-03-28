@@ -234,7 +234,7 @@ int NoiseDetector::calculateMovingIntegral(int currentMicValue, int writeIndex)
         integralValue    -= abs(val_buf[oldPos] - adcAverageDetect);
     }
 
-    int avgIntegral = integralValue / sampleIntegralCount;
+    int avgIntegral = integralValue / INTEGRAL_SAMPLES_DETECT;
     return avgIntegral;
 }
 
@@ -375,6 +375,7 @@ void NoiseDetector::updateBuffer(int micValue) {
             dBValue_A = 0;
             dBValue_B = 0;
             detect_count = 0;
+            avgIntegral = 0;
             isDataStored = true;
             isNoiseDetected = false;
         }
