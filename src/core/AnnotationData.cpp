@@ -106,17 +106,17 @@ bool AnnotationData::detectNoise_A(int avgIntegral) {
     int dBValue = calculateDbValue(avgIntegral);
     unsigned long currentTime = millis();
 
-    if (dBValue >= INSTANT_NOISE_THRESHOLD_DB_A) {
+    if (dBValue >= INSTANT_NOISE_THRESHOLD_DB) {
         for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
             long difTime = currentTime - noiseEventTimes_A[i];
-            if ((noiseEventTimes_A[i] != 0) && (difTime < TIME_IGNORE_NOISE_A)){
+            if ((noiseEventTimes_A[i] != 0) && (difTime < TIME_IGNORE_NOISE)){
                 return false;
             }   
         }
         noiseEventTimes_A[noiseEventIndex_A] = currentTime;
         noiseEventIndex_A = (noiseEventIndex_A + 1) % MAX_NOISE_EVENTS;
 
-        unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND_A * 1000;
+        unsigned long observationTimeMillis = OBSERVATION_DURATION_SECOND * 1000;
         int eventCount = 1;
 
         for (int i = 0; i < MAX_NOISE_EVENTS; ++i) {
@@ -127,7 +127,7 @@ bool AnnotationData::detectNoise_A(int avgIntegral) {
                 }
             }
         }
-        if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD_A) {
+        if (eventCount >= NOISE_EVENT_COUNT_THRESHOLD) {
             dBValue_A = dBValue;
             return true;
         }
