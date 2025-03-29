@@ -84,6 +84,7 @@ void loop() {
                     M5.Lcd.printf("Starting Waveform Drawer...\n");
                     currentMode = WAVEFORM_DRAWER;
                     waveformDrawer.initWaveformDrawer();
+                    M5.Lcd.clear();
                     waveformDrawer.getADCAverage();
                     waveformDrawer.startTimer();
                     break;

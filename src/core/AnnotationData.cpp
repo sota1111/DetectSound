@@ -56,6 +56,10 @@ void AnnotationData::initBuf() {
     for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
         noiseEventTimes_A[i] = 0;
     }
+    write_index = 0;
+    detect_index = 0;
+    dBValue_A = 0;
+    isDataStored = true;
     integralValue = 0;
     sampleIntegralCount = 0;
 }
@@ -197,13 +201,10 @@ void AnnotationData::updateBuffer(int micValue) {
             int stopTime = millis() - startTime;
             M5.Lcd.printf("Time: %d\n", stopTime);
 
-            write_index = 0;
-            detect_index = 0;
-            dBValue_A = 0;
+            // 関数スコープの変数初期化
             detect_count = 0;
-            avgIntegral = 0;
-            isDataStored = true;
-            isNoiseDetected = false;
+            isNoiseDetected      = false;
+            startTime    = 0;
         }
     }
 }
