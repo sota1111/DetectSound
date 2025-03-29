@@ -59,7 +59,7 @@ void AnnotationData::initBuf() {
     write_index = 0;
     detect_index = 0;
     dBValue_A = 0;
-    isDataStored = true;
+    isDataStored = false;
     integralValue = 0;
     sampleIntegralCount = 0;
 }
@@ -193,6 +193,7 @@ void AnnotationData::updateBuffer(int micValue) {
         }
         // ノイズ検出後、データを貯め続ける。
         if(detect_count > RECORD_AFTER_LEN){
+            isDataStored = true;
             timerStop(timer_annotation);
             int dBValue = dBValue_A;
             
