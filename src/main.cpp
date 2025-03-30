@@ -3,16 +3,17 @@
 #include "core/WaveformDrawer.h"
 #include "core/FourierTransform.h"
 #include "core/AnnotationData.h"
+#include "core/NeuralNetwork.h"
 #include "config/secret.h"
 
 // 現在のモードを記憶する変数
-enum Mode { NONE, NOISE_DETECTOR, FOUNRIER_TRANSFORM, WAVEFORM_DRAWER, ANNOTATION };
+enum Mode { NONE, NOISE_DETECTOR, FOUNRIER_TRANSFORM, WAVEFORM_DRAWER, ANNOTATION, NEURAL_NETWORK };
 Mode currentMode = NONE;
 
 // メニュー選択用の変数
 int selectedItem = 0;
-const int NUM_MENU_ITEMS = 4;
-const char* menuItems[] = {"Noise Detect", "FFT", "Wave Drawer", "Annotation"};
+const int NUM_MENU_ITEMS = 5;
+const char* menuItems[] = {"Noise Detect", "FFT", "Wave Drawer", "Annotation", "Neural Network"};
 const int MENU_START_Y = 30;  // メニューの開始Y座標
 const int MENU_ITEM_HEIGHT = 30;  // メニュー項目の高さ
 
@@ -98,6 +99,16 @@ void loop() {
                     annotationData.getADCAverage();
                     annotationData.startTimer();
                     break;
+                case 4: // NN
+                    M5.Lcd.clear();
+                    M5.Lcd.setCursor(0, 0);
+                    M5.Lcd.setTextSize(1);
+                    M5.Lcd.printf("Neural Network...\n");
+                    currentMode = NEURAL_NETWORK;
+                    neuralNetwork.initNeuralNetworkData();
+                    neuralNetwork.getADCAverage();
+                    neuralNetwork.startTimer();
+                    break;
             }
         }
     } else {
@@ -111,6 +122,8 @@ void loop() {
         } else if (currentMode == WAVEFORM_DRAWER) {
         } else if (currentMode == ANNOTATION) {
             annotationData.storeNoise();
+        } else if (currentMode == NEURAL_NETWORK) {
+            neuralNetwork.storeNoise();
         }
     }
 }
