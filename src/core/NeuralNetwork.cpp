@@ -2,9 +2,13 @@
 #include <HTTPClient.h>
 #include "common.h"
 #include "NeuralNetwork.h"
+#include "Validation/Validation_inference.h"
+#include "Validation/Validation_parameters.h"
 
 NeuralNetwork neuralNetwork;
 hw_timer_t *timer_nn = NULL;
+void *_context = NULL;
+float *nn_input_buffer;
 
 // 初期化
 NeuralNetwork::NeuralNetwork() {
@@ -21,6 +25,8 @@ NeuralNetwork::NeuralNetwork() {
     for (int i = 0; i < MAX_NOISE_EVENTS; i++) {
         noiseEventTimes_A[i] = 0;
     }
+    _context = nnablart_validation_allocate_context(Validation_parameters);
+    nn_input_buffer = nnablart_validation_input_buffer(_context, 0);
 }
 
 NeuralNetwork::~NeuralNetwork() {
@@ -33,6 +39,25 @@ void NeuralNetwork::freeBuffer() {
         val_buf = nullptr;
     }
 }
+
+void NeuralNetwork::softmax(const float* logits, float* probs, int size) {
+    float max_logit = logits[0];
+    for (int i = 1; i < size; ++i) {
+      if (logits[i] > max_logit) {
+        max_logit = logits[i];
+      }
+    }
+  
+    float sum_exp = 0.0f;
+    for (int i = 0; i < size; ++i) {
+      probs[i] = expf(logits[i] - max_logit);  // 数値安定化のためにmaxを引く
+      sum_exp += probs[i];
+    }
+  
+    for (int i = 0; i < size; ++i) {
+      probs[i] /= sum_exp;
+    }
+  }
 
 // 1秒間のAD変換値の平均を取得する関数
 void NeuralNetwork::getADCAverage() {
@@ -72,6 +97,7 @@ void NeuralNetwork::initNeuralNetworkData() {
         return;
     }
     initBuf();
+#if 0
     sdcardHandler.initSDCard(APARTMENT_NAME, ROOM_NAME);
     wifiHandler.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
     wifiHandler.synchronizeTime();
@@ -92,6 +118,7 @@ void NeuralNetwork::initNeuralNetworkData() {
     }
     http.end();
     delay(1000);
+#endif
     M5.Lcd.fillScreen(TFT_BLACK);
 }
 
@@ -185,7 +212,7 @@ void NeuralNetwork::updateBuffer(int micValue) {
         if ( ( isDetectNoise_A) && (isNoiseDetected == false) ) {
             isNoiseDetected = true;
             detect_index = write_index;
-            M5.Lcd.println("NOISE DETECTED");
+            //M5.Lcd.println("NOISE DETECTED");
             startTime = millis();
         }
         if(isNoiseDetected){
@@ -197,10 +224,10 @@ void NeuralNetwork::updateBuffer(int micValue) {
             timerStop(timer_nn);
             int dBValue = dBValue_A;
             
-            M5.Lcd.printf("dB: %d\n", dBValue);
+            //M5.Lcd.printf("dB: %d\n", dBValue);
             isRequestSpeaker = true;
             int stopTime = millis() - startTime;
-            M5.Lcd.printf("Time: %d\n", stopTime);
+            //M5.Lcd.printf("Time: %d\n", stopTime);
 
             // 関数スコープの変数初期化
             detect_count = 0;
@@ -241,6 +268,47 @@ void NeuralNetwork::logNoiseTimestamp() {
     }
 }
 
+int NeuralNetwork::exeNeuralNetwork() {
+    if (!_context) {
+        M5.Lcd.println("NN context allocation failed");
+        return -1;
+    }
+    int startIndex = detect_index - NN_BEFORE_LEN;
+    int endIndex = startIndex + NNABLART_VALIDATION_INPUT0_SIZE;
+
+    int bufferIndex = 0;
+    for (int index = startIndex; index < endIndex; index++) {
+        nn_input_buffer[bufferIndex] = ((float)(val_buf[index % RECORD_MAX_LEN] - 2048)) / 2048.0;
+        bufferIndex++;
+    }
+
+    // 推論の実行（ミリ秒単位で計測）
+    int64_t start_time = millis();
+    nnablart_validation_inference(_context);
+    int64_t elapsed_time = millis() - start_time;
+
+    // 推論結果の取得
+    float* logits = nnablart_validation_output_buffer(_context, 0);
+    float probs[NNABLART_VALIDATION_OUTPUT0_SIZE];
+
+    softmax(logits, probs, NNABLART_VALIDATION_OUTPUT0_SIZE);
+    int top_class = 0;
+    float top_probability = 0.0f;
+    for (int classNo = 0; classNo < NNABLART_VALIDATION_OUTPUT0_SIZE; classNo++) {
+      M5.Lcd.printf("class %d: %f\n", classNo, probs[classNo]);
+      if (probs[classNo] > top_probability) {
+        top_probability = probs[classNo];
+        top_class = classNo;
+      }
+    }
+
+    // 推論結果の表示
+    M5.Lcd.printf("result: %d, ", top_class);
+    M5.Lcd.printf("time:  %lld ms\n\n", elapsed_time);
+    return top_class;
+}
+
+
 void NeuralNetwork::storeNoise() {
     if (isRequestSpeaker) {
         speakerHandler.playTone(440, 100);
@@ -249,9 +317,21 @@ void NeuralNetwork::storeNoise() {
 
     if (isDataStored) {
         //notificationAWS();
-        logNoiseTimestamp();
+        //logNoiseTimestamp();
+        int soundClass = exeNeuralNetwork();
+
+        M5.Lcd.setTextSize(FONT_SIZE_LARGE);
+        M5.Lcd.setCursor(0, 60);
+
+        if (soundClass == 0) {
+            M5.Lcd.println("VOICE");
+        } else if (soundClass == 1) {
+            M5.Lcd.println("CLAP");
+        }
+        M5.Lcd.setTextSize(1);
+        delay(1000);
         isDataStored = false;
-        M5.Lcd.println("NOISE STORED");
+        //M5.Lcd.println("NOISE STORED");
         restartTimer();
     }
 }

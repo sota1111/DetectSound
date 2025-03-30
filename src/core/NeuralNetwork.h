@@ -31,6 +31,10 @@
 
 // 表示関連
 #define FONT_SIZE 2
+#define FONT_SIZE_LARGE 8
+
+// NN関連
+#define NN_BEFORE_LEN 200
 
 class NeuralNetwork {
 private:
@@ -55,6 +59,8 @@ private:
     void logNoiseTimestamp();
     void notificationAWS();
     void freeBuffer();
+    void softmax(const float* logits, float* probs, int size);
+    int exeNeuralNetwork();
 
 public:
     NeuralNetwork();
