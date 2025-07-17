@@ -52,28 +52,23 @@ M5Stackベースの多機能音響解析システム。ノイズ検出、FFT分�
    cd DetectSound
    git submodule update --init --recursive
    ```
-5. **設定ファイル**
-   - `src/config/secret.h`にWiFi設定やAWS認証情報を記載
+
+2. **設定ファイル**
+   - `src/config/secret.h`を追加し、以下のフォーマットでWiFi設定を記載
    ```
    #define WIFI_SSID "hogehoge"
    #define WIFI_PASSWORD "hogehoge"
    ```
 
-2. **PlatformIOプロジェクトのビルド**
-   ```bash
-   pio run
-   ```
-2. **PlatformIOプロジェクトのビルド**
-   ```bash
-   pio run -t clean
-   ```
-
-4. **M5Stack Fireへのアップロード**
+3. **M5Stack Fireへのアップロード**
    ```bash
    pio run -t upload
    ```
-
-
+   
+4. **書き込めない時に試すこと**
+   ```bash
+   pio run -t clean
+   ```
 
 ## 使用方法
 
