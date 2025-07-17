@@ -1,0 +1,3 @@
+[submodule "lib/nnabla-c-runtime"]
+	path = lib/nnabla-c-runtime
+	url = https://github.com/sony/nnabla-c-runtime.git
